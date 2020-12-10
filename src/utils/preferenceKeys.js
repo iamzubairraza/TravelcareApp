@@ -1,0 +1,5 @@
+export default {
+    HAS_SESSION: 'HAS_SESSION',
+    USER_TYPE: 'USER_TYPE',
+    CURRENT_USER: 'CURRENT_USER',
+}

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/TravelWithCare.iml" filepath="$PROJECT_DIR$/.idea/modules/TravelWithCare.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/TravelWithCare.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/TravelWithCare.app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/799225191/TravelWithCare.react-native-community_masked-view.iml" filepath="$PROJECT_DIR$/.idea/modules/799225191/TravelWithCare.react-native-community_masked-view.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/176866640/TravelWithCare.react-native-gesture-handler.iml" filepath="$PROJECT_DIR$/.idea/modules/176866640/TravelWithCare.react-native-gesture-handler.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/85541379/TravelWithCare.react-native-image-crop-picker.iml" filepath="$PROJECT_DIR$/.idea/modules/85541379/TravelWithCare.react-native-image-crop-picker.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/796817762/TravelWithCare.react-native-linear-gradient.iml" filepath="$PROJECT_DIR$/.idea/modules/796817762/TravelWithCare.react-native-linear-gradient.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/280297998/TravelWithCare.react-native-permissions.iml" filepath="$PROJECT_DIR$/.idea/modules/280297998/TravelWithCare.react-native-permissions.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-198944303/TravelWithCare.react-native-preference.iml" filepath="$PROJECT_DIR$/.idea/modules/-198944303/TravelWithCare.react-native-preference.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/1057474252/TravelWithCare.react-native-reanimated.iml" filepath="$PROJECT_DIR$/.idea/modules/1057474252/TravelWithCare.react-native-reanimated.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-1178482247/TravelWithCare.react-native-safe-area-context.iml" filepath="$PROJECT_DIR$/.idea/modules/-1178482247/TravelWithCare.react-native-safe-area-context.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-1086173935/TravelWithCare.react-native-screens.iml" filepath="$PROJECT_DIR$/.idea/modules/-1086173935/TravelWithCare.react-native-screens.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/923378331/TravelWithCare.tipsi-stripe.iml" filepath="$PROJECT_DIR$/.idea/modules/923378331/TravelWithCare.tipsi-stripe.iml" />
+    </modules>
+  </component>
+</project>
