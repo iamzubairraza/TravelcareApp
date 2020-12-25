@@ -18,7 +18,7 @@ import moment from 'moment';
 import InputField from './InputField'
 import countries from '../utils/countries-emoji.json'
 import colors from '../utils/colors';
-const listOfContries = Object.values(countries)
+export const listOfContries = Object.values(countries)
 const { height } = Dimensions.get('screen');
 
 export default class CountryCodePicker extends Component {
@@ -40,6 +40,8 @@ export default class CountryCodePicker extends Component {
                 <View style={{ width: 80, height: 5, alignSelf: 'center', marginTop: 10, marginBottom: 20, backgroundColor: colors.grey }} />
                 <Text style={{ fontWeight: '600', fontSize: 16, color: 'black', alignSelf: 'center' }}>{'Select Your Country'}</Text>
                 <InputField
+                    fieldRef={ref => this.fieldSearch = ref}
+                    onParentPress={() => { if (this.fieldSearch) this.fieldSearch.focus() }}
                     inputContainer={{ backgroundColor: 'white', marginVertical: 20 }}
                     placeholder={'Search'}
                     value={searchText}

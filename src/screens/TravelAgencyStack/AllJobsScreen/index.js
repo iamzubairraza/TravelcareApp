@@ -3,27 +3,15 @@ import {
     View,
     Text,
     Image,
-    ImageBackground,
     Alert,
     TouchableOpacity,
     StyleSheet, FlatList,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import Preference from 'react-native-preference'
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import moment from 'moment'
-import Animated from 'react-native-reanimated';
-import BottomSheet from 'reanimated-bottom-sheet';
-
-import Button from '../../../components/Button'
-import InputField from '../../../components/InputField'
-import images from '../../../assets/images'
 import icons from '../../../assets/icons'
 import colors from '../../../utils/colors';
 import BackGround from '../../../components/HomeBackGround';
 import Header from '../../../components/Header';
-
-
 
 export default class AllJobsScreen extends Component {
     constructor(props) {

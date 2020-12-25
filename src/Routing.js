@@ -25,9 +25,14 @@ import {
 /** Main Stack of the app */
 const MainStack = () => {
     let initialRouteName = 'Splash'
-    if (Preference.get(preferenceKeys.HAS_SESSION)) {
-        if (Preference.get(preferenceKeys.USER_TYPE) == COMPANY) initialRouteName = 'TravelAgencyStack'
-        if (Preference.get(preferenceKeys.USER_TYPE) == TRAVELER) initialRouteName = 'TravelerStack'
+    const hassSession = Preference.get(preferenceKeys.HAS_SESSION)
+    console.log('hassSession', hassSession)
+    if (hassSession) {
+        const Token = Preference.get(preferenceKeys.AUTH_TOKEN)
+        const userType = Preference.get(preferenceKeys.USER_TYPE)
+        // console.log('AUTH_TOKEN', Token)
+        if (userType == COMPANY) initialRouteName = 'TravelAgencyStack'
+        else if (userType == TRAVELER) initialRouteName = 'TravelerStack'
     }
     return (
         <Stack.Navigator headerMode="none" initialRouteName={initialRouteName}>

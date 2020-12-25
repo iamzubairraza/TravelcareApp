@@ -11,11 +11,11 @@ import {
 import _ from 'lodash'
 
 import colors from '../utils/colors';
-import { event } from 'react-native-reanimated';
 
 export default Button = (props) => {
     const {
         inputContainer,
+        onParentPress,
         inputStyle,
         fieldRef,
         value,
@@ -33,10 +33,15 @@ export default Button = (props) => {
     } = props
 
     return (
-        <View style={[styles.inputContainer, inputContainer, hideShadowElevation ? {} : styles.shadowElevation]}>
+        <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => {
+                if (onParentPress && typeof onParentPress == 'function') onParentPress()
+            }}
+            style={[styles.inputContainer, inputContainer, hideShadowElevation ? {} : styles.shadowElevation]}>
             {leftIcon &&
                 <Image
-                    style={[styles.iconStyle, { marginRight: 10 }, leftIconStyle]}
+                    style={[styles.iconStyle, { marginRight: 5 }, leftIconStyle]}
                     source={leftIcon}
                 />
             }
@@ -74,7 +79,7 @@ export default Button = (props) => {
                     }
                 </TouchableOpacity>
             }
-        </View>
+        </TouchableOpacity>
     )
 }
 
@@ -119,7 +124,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.lightGrey,
         marginTop: 10,
         borderRadius: 10,
-        paddingHorizontal: 25
+        paddingHorizontal: 15
     },
     inputStyle: {
         flex: 1,

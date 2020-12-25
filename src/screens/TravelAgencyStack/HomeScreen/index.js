@@ -3,30 +3,24 @@ import {
     View,
     Text,
     Image,
-    Alert,
     TouchableOpacity,
     StyleSheet,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import Preference from 'react-native-preference'
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
-
-
-import Button from '../../../components/Button'
-import InputField from '../../../components/InputField'
-import images from '../../../assets/images'
 import icons from '../../../assets/icons'
 import colors from '../../../utils/colors';
 import BackGround from '../../../components/HomeBackGround';
 import Header from '../../../components/Header';
-
+import preferenceKeys from '../../../utils/preferenceKeys';
 
 export default class HomeScreen extends Component {
     constructor(props) {
         super(props);
+        const currentUser = Preference.get(preferenceKeys.CURRENT_USER)
         this.state = {
             loading: false,
-            acceptedOffers: "07"
+            acceptedOffers: "07",
+            currentUser: currentUser
         }
     }
 
@@ -36,6 +30,7 @@ export default class HomeScreen extends Component {
 
     render() {
         const { navigation } = this.props
+        const { currentUser } = this.state
         return (
             <View style={styles.container}>
                 <BackGround blueView={'25%'} whiteView={'75%'} />

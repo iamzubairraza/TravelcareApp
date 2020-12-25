@@ -4,6 +4,9 @@
       <root url="jar://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/6edef4bc541e70fc2bb2b3abe251a341/jetified-CreditCardEntry-1.5.1/jars/classes.jar!/" />
       <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/6edef4bc541e70fc2bb2b3abe251a341/jetified-CreditCardEntry-1.5.1/res" />
       <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/6edef4bc541e70fc2bb2b3abe251a341/jetified-CreditCardEntry-1.5.1/AndroidManifest.xml" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/6032ef2f7af2a4c09fd17295a9e8a054/jetified-CreditCardEntry-1.5.1/res" />
+      <root url="jar://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/6032ef2f7af2a4c09fd17295a9e8a054/jetified-CreditCardEntry-1.5.1/jars/classes.jar!/" />
+      <root url="file://$USER_HOME$/.gradle/caches/transforms-2/files-2.1/6032ef2f7af2a4c09fd17295a9e8a054/jetified-CreditCardEntry-1.5.1/AndroidManifest.xml" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>

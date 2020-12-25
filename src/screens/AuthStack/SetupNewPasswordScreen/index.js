@@ -21,6 +21,8 @@ import images from '../../../assets/images'
 import icons from '../../../assets/icons'
 import colors from '../../../utils/colors';
 
+import { requestPost, API } from '../../../utils/API'
+
 const { height } = Dimensions.get('screen');
 
 export default class SetupNewPasswordScreen extends Component {
@@ -35,6 +37,7 @@ export default class SetupNewPasswordScreen extends Component {
 
         this.state = {
             loading: false,
+            loadingOnSetPassword: false,
             email: email,
             password: '',
             isHiddenPassword: true,
@@ -67,16 +70,29 @@ export default class SetupNewPasswordScreen extends Component {
 
     onSetAsNewPasswordPress = () => {
         const { navigation } = this.props
-
+        const { email, password } = this.state
         if (this.verifyFields()) {
-            this.setState({ showOptionModal: true })
-            setTimeout(() => {
-                this.setState({ showOptionModal: false }, () => {
+            let formData = new FormData();
+            formData.append('email', email)
+            formData.append('password', password)
+            this.setState({ loadingOnSetPassword: true })
+            requestPost(API.RESET_PASSWORD, formData).then((response) => {
+                if (response.status == 200) {
+                    this.setState({ showOptionModal: true, loadingOnSetPassword: false })
                     setTimeout(() => {
-                        navigation.pop(3)
-                    }, 100);
-                })
-            }, 4000);
+                        this.setState({ showOptionModal: false }, () => {
+                            setTimeout(() => {
+                                navigation.pop(3)
+                            }, 100);
+                        })
+                    }, 2000);
+                } else {
+                    Alert.alert(null, response.message)
+                }
+            }).catch(() => {
+                this.setState({ showOptionModal: true, loadingOnSetPassword: false })
+                Alert.alert(null, 'Something went wrong')
+            })
         }
     }
 
@@ -98,7 +114,7 @@ export default class SetupNewPasswordScreen extends Component {
                         </View>
                         <Image
                             style={{ alignSelf: 'center', width: 150, height: 150, resizeMode: 'contain', marginVertical: 10 }}
-                            source={images.logo}
+                            source={images.success}
                         />
                         <Text style={styles.modalSuccessText}>{'New password is successfully set'}</Text>
                     </View>
@@ -110,7 +126,7 @@ export default class SetupNewPasswordScreen extends Component {
     render() {
         const {
             loading,
-            email,
+            loadingOnSetPassword,
             password,
             isHiddenPassword,
             confirmPassword,
@@ -135,10 +151,11 @@ export default class SetupNewPasswordScreen extends Component {
                     style={{ flexGrow: 1, width: '100%', paddingHorizontal: 30, paddingTop: 20, paddingBottom: 50 }}>
                     <Image
                         style={{ alignSelf: 'center', width: 150, height: 150, resizeMode: 'contain', marginVertical: 20 }}
-                        source={images.logo}
+                        source={images.password}
                     />
                     <InputField
                         fieldRef={ref => this.fieldPassword = ref}
+                        onParentPress={() => { if (this.fieldPassword) this.fieldPassword.focus() }}
                         inputContainer={{ paddingRight: 10 }}
                         value={password}
                         placeholder={'Enter New Password'}
@@ -158,6 +175,7 @@ export default class SetupNewPasswordScreen extends Component {
                     />
                     <InputField
                         fieldRef={ref => this.fieldConfrimPassword = ref}
+                        onParentPress={() => { if (this.fieldConfrimPassword) this.fieldConfrimPassword.focus() }}
                         inputContainer={{ paddingRight: 10 }}
                         value={confirmPassword}
                         placeholder={'Confirm New Password'}
@@ -176,6 +194,9 @@ export default class SetupNewPasswordScreen extends Component {
                     />
                     <View style={{ flex: 1 }} />
                     <Button
+                        activityIndicatorProps={{
+                            loading: loadingOnSetPassword
+                        }}
                         containerStyle={{ backgroundColor: colors.primary }}
                         buttonTextStyle={{ color: colors.white }}
                         buttonText={'Set as New Password'}

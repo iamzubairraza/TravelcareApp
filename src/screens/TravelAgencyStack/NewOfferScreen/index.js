@@ -13,29 +13,22 @@ import {
 } from 'react-native';
 
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
-import BottomSheet from 'reanimated-bottom-sheet';
-import moment from 'moment'
-import ImagePickerCrop from 'react-native-image-crop-picker';
-import nodeEmoji from 'node-emoji';
-
-import Button, { ButtonWithIcon } from '../../../components/Button'
+import Button from '../../../components/Button'
 import InputField from '../../../components/InputField'
-import CountryCodePicker from '../../../components/CountryCodePicker'
-import DropDownPicker from '../../../components/DropDownPicker'
-import CheckBoxRound from '../../../components/CheckBoxRound'
+import KeyboardAccessoryView from '../../../components/KeyboardAccessoryView'
 
-import images from '../../../assets/images'
 import icons from '../../../assets/icons'
 import colors from '../../../utils/colors';
-import { permissionCamera } from '../../../utils/permissions'
 
 import {
     TRAVELER,
     COMPANY,
 } from '../../../utils/constants'
+import { API, requestPostWithToken } from '../../../utils/API';
+import images from '../../../assets/images';
 
 const { width, height } = Dimensions.get('screen');
-
+const inputAccessoryViewID = 'NewOfferScreen'
 export default class NewOfferScreen extends Component {
     constructor(props) {
         super(props);
@@ -43,8 +36,9 @@ export default class NewOfferScreen extends Component {
         this.state = {
             loading: false,
             offerName: '',
-            fieldTwo: '',
-            fullDescription: ''
+            shortDescription: '',
+            fullDescription: '',
+            showSuccessModal: false
         }
     }
 
@@ -55,19 +49,62 @@ export default class NewOfferScreen extends Component {
     verifyFields = () => {
         const {
             offerName,
-            fieldTwo,
+            shortDescription,
             fullDescription
         } = this.state
+
+        if (offerName === '') {
+            Alert.alert(null, 'Offer name is required',
+                [{ text: 'OK', onPress: () => { this.fieldOfferName.focus() } }]
+            )
+            return false
+        } else if (shortDescription === '') {
+            Alert.alert(null, 'Short description is required',
+                [{ text: 'OK', onPress: () => { this.fieldShortDescription.focus() } }]
+            )
+            return false
+        } else if (fullDescription === '') {
+            Alert.alert(null, 'Full description is required',
+                [{ text: 'OK', onPress: () => { this.fieldDesctiption.focus() } }]
+            )
+            return false
+        }
 
         return true
     }
 
     onConfirmPress = () => {
-        const { navigation } = this.props
-        const { selectedLogin } = this.state
+        const { navigation, route } = this.props
+        const {
+            offerName,
+            shortDescription,
+            fullDescription
+        } = this.state
 
         if (this.verifyFields()) {
-            Alert.alert(null, 'Under Development')
+            Keyboard.dismiss()
+            let formData = new FormData();
+            formData.append('offer_name', offerName)
+            formData.append('short_description', shortDescription)
+            formData.append('full_description', fullDescription)
+            this.setState({ loading: true })
+            requestPostWithToken(API.CREATE_OFFER, formData).then((response) => {
+                this.setState({ loading: false })
+                console.log('onConfirmPress', 'requestPost-response', response);
+                if (response.status == 200) {
+                    const { updateOffers } = route.params
+                    if (updateOffers && typeof updateOffers == 'function') updateOffers()
+                    Alert.alert(null, response.message,
+                        [{ text: 'OK', onPress: () => { navigation.goBack() } }]
+                    )
+                } else {
+                    Alert.alert(null, response.message)
+                }
+            }).catch((error) => {
+                this.setState({ loading: false })
+                console.log('onConfirmPress', 'error', error)
+                Alert.alert(null, 'Something went wrong')
+            })
         }
     }
 
@@ -75,7 +112,7 @@ export default class NewOfferScreen extends Component {
         const {
             loading,
             offerName,
-            fieldTwo,
+            shortDescription,
             fullDescription
         } = this.state
         const { navigation } = this.props
@@ -99,6 +136,7 @@ export default class NewOfferScreen extends Component {
                     <View style={{ flex: 1 }}>
                         <InputField
                             fieldRef={ref => this.fieldOfferName = ref}
+                            onParentPress={() => { if (this.fieldOfferName) this.fieldOfferName.focus() }}
                             value={offerName}
                             placeholder={'Offer name'}
                             textContentType={'name'}
@@ -107,34 +145,40 @@ export default class NewOfferScreen extends Component {
                                 this.setState({ offerName: text })
                             }}
                             onSubmitEditing={() => {
-                                this.fieldFieldTwo.focus()
+                                this.fieldShortDescription.focus()
                             }}
+                            inputAccessoryViewID={inputAccessoryViewID}
                         />
                         <InputField
-                            fieldRef={ref => this.fieldFieldTwo = ref}
-                            value={fieldTwo}
-                            placeholder={'Field 2'}
+                            fieldRef={ref => this.fieldShortDescription = ref}
+                            onParentPress={() => { if (this.fieldShortDescription) this.fieldShortDescription.focus() }}
+                            value={shortDescription}
+                            placeholder={'Short description'}
                             returnKeyType='next'
                             onChangeText={(text) => {
-                                this.setState({ fieldTwo: text })
+                                this.setState({ shortDescription: text })
                             }}
                             onSubmitEditing={() => {
                                 this.fieldDesctiption.focus()
                             }}
+                            inputAccessoryViewID={inputAccessoryViewID}
                         />
                         <InputField
+                            fieldRef={ref => this.fieldDesctiption = ref}
+                            onParentPress={() => { if (this.fieldDesctiption) this.fieldDesctiption.focus() }}
                             inputContainer={{ height: 250 }}
                             inputStyle={{ height: '90%' }}
-                            fieldRef={ref => this.fieldDesctiption = ref}
                             value={fullDescription}
                             multiline={true}
                             placeholder={'Full description'}
                             onChangeText={(text) => {
                                 this.setState({ fullDescription: text })
                             }}
+                            inputAccessoryViewID={inputAccessoryViewID}
                         />
                     </View>
                     <Button
+                        activityIndicatorProps={{ loading: loading }}
                         containerStyle={{ backgroundColor: colors.green, marginBottom: 70 }}
                         buttonTextStyle={{ color: colors.white }}
                         buttonText={'Confirm'}
@@ -142,6 +186,7 @@ export default class NewOfferScreen extends Component {
                             this.onConfirmPress()
                         }}
                     />
+                    <KeyboardAccessoryView inputAccessoryViewID={inputAccessoryViewID} />
                 </KeyboardAwareScrollView>
             </View>
         )

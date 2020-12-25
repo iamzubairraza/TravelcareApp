@@ -1,9 +1,9 @@
 export default {
   background: '#e9ebef',
-  white: 'white',
+  white: '#ffffff',
   lightWhite: "#ffff",
   primary: '#2072d6',
-  black: 'black',
+  black: '#000000',
   transparent: '#ffffff00',
   transparentGrey: '#f2f2f2AA',
   Grey: '#f2f2f2',

@@ -24,7 +24,6 @@ import colors from '../../../utils/colors';
 import BackGround from '../../../components/HomeBackGround';
 import Header from '../../../components/Header';
 
-
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
 export default class ReceivedOffersScreen extends Component {
@@ -136,9 +135,12 @@ export default class ReceivedOffersScreen extends Component {
                             buttonTextStyle={{ color: colors.white }}
                             buttonText={isClaim ? 'Claim' : 'Cancel Claim'}
                             onPressButton={() => {
-                                const { updateStatusTo } = this.props.route.params
-                                if (updateStatusTo && typeof updateStatusTo == 'function') {
-                                    updateStatusTo(isClaim, index)
+                                const { params } = this.props.route
+                                if (params) {
+                                    const { updateStatusTo } = params
+                                    if (updateStatusTo && typeof updateStatusTo == 'function') {
+                                        updateStatusTo(isClaim, index)
+                                    }
                                 }
                                 navigation.goBack()
                             }}

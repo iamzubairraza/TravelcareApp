@@ -7,23 +7,14 @@ import {
     TouchableOpacity,
     StyleSheet, FlatList,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import Preference from 'react-native-preference'
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import moment from 'moment'
 
-
-import Button from '../../../components/Button'
-import InputField from '../../../components/InputField'
-import images from '../../../assets/images'
 import icons from '../../../assets/icons'
 import colors from '../../../utils/colors';
 import BackGround from '../../../components/HomeBackGround';
 import Header from '../../../components/Header';
-
-import Animated from 'react-native-reanimated';
-import BottomSheet from 'reanimated-bottom-sheet';
-
+import { API, requestGetWithToken } from '../../../utils/API';
+import Loader from '../../../components/Loader';
 
 export default class AcceptedScreen extends Component {
     constructor(props) {
@@ -105,6 +96,23 @@ export default class AcceptedScreen extends Component {
     }
 
     componentDidMount() {
+        this.getAcceptedOffers()
+    }
+
+    getAcceptedOffers = () => {
+        this.setState({ loading: true })
+        requestGetWithToken(API.GET_COMPANY_OFFERS).then((response) => {
+            this.setState({ loading: false })
+            if (response.status == 200) {
+                console.log('getAcceptedOffers', 'response.data', response.data)
+                // this.setState({ travelers: response.data })
+            } else {
+                Alert.alert(null, response.message)
+            }
+        }).catch((error) => {
+            this.setState({ loading: false })
+            console.log('getAcceptedOffers', 'error', error)
+        })
     }
 
     tarvelerBox = (item, index) => {
@@ -126,13 +134,14 @@ export default class AcceptedScreen extends Component {
                             borderColor: item.statusOffer ? colors.green : colors.yellow,
                             height: 80,
                             alignItems: 'center',
+                            justifyContent: 'center',
                             borderRadius: 40,
                             borderWidth: 1
                         }}>
                             <Image source={item.userImage} style={{
                                 width: 70,
                                 height: 70,
-                                resizeMode: 'contain',
+                                resizeMode: 'cover',
                                 borderRadius: 35
                             }} />
                         </View>
@@ -194,7 +203,7 @@ export default class AcceptedScreen extends Component {
                             <View style={{ width: 15, height: 15, backgroundColor: colors.green, borderRadius: 8, alignItems: "center", justifyContent: "center" }}>
                                 <Image source={icons.check_white} style={{ width: 10, height: 10, borderRadius: 10, tintColor: colors.white }} />
                             </View>
-                            <Text style={{ fontSize: 14, color: colors.green, marginStart: 5 }}>{item.traveler.length + " Traveler selected"}</Text>
+                            <Text style={{ fontSize: 14, color: colors.green, marginStart: 5 }}>{item.traveler?.length + " Traveler selected"}</Text>
                         </View>
                     </View>
                 </View>
@@ -213,7 +222,7 @@ export default class AcceptedScreen extends Component {
     }
 
     render() {
-        const { displayBottomSheet } = this.state
+        const { loading } = this.state
         const { navigation } = this.props
         return (
             <View style={styles.container}>
@@ -242,6 +251,7 @@ export default class AcceptedScreen extends Component {
                         renderItem={({ item, index }) => this.maintarvelerBox(item, index)}
                     />
                 </View>
+                <Loader loading={loading} />
             </View>
         )
     }

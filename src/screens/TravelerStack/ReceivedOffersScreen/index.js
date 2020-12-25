@@ -22,8 +22,6 @@ import colors from '../../../utils/colors';
 import BackGround from '../../../components/HomeBackGround';
 import Header from '../../../components/Header';
 
-
-
 export default class ReceivedOfferDetailsScreen extends Component {
     constructor(props) {
         super(props);
@@ -132,7 +130,7 @@ export default class ReceivedOfferDetailsScreen extends Component {
                                     source={item.isClaimed ? icons.check : icons.clockIcon}
                                 />
                             </View>
-                            <Text style={{ fontSize: 11, color: colors.grey, marginLeft: 10 }}>{'Expires in: ' + expiresIn}</Text>
+                            <Text style={{ fontSize: 11, color: colors.grey, marginLeft: 10 }}>{'Expires in: ' + expiresIn + ' hrs'}</Text>
                         </View>
                         <View style={{
                             width: 20,
@@ -208,6 +206,8 @@ export default class ReceivedOfferDetailsScreen extends Component {
                                         let receivedOffersListTemp = this.state.receivedOffersList
                                         receivedOffersListTemp[index].isStateChangeToIdle = true
                                         this.setState({ receivedOffersList: receivedOffersListTemp })
+                                    } else {
+                                        navigation.navigate('ProfileSetting')
                                     }
                                 }}
                             />

@@ -10,6 +10,7 @@ import {
     StatusBar,
     StyleSheet,
     Keyboard,
+    SafeAreaView
 } from 'react-native';
 
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
@@ -21,15 +22,20 @@ import Preference from 'react-native-preference'
 
 import Button, { ButtonWithIcon } from '../../../components/Button'
 import InputField from '../../../components/InputField'
+import KeyboardAccessoryView from '../../../components/KeyboardAccessoryView'
 import CountryCodePicker from '../../../components/CountryCodePicker'
 import DropDownPicker from '../../../components/DropDownPicker'
 import CheckBoxRound from '../../../components/CheckBoxRound'
+import { listOfContries } from "../../../components/CountryCodePicker";
+import Loader from '../../../components/Loader';
 
 import images from '../../../assets/images'
 import icons from '../../../assets/icons'
 import colors from '../../../utils/colors';
 import preferenceKeys from '../../../utils/preferenceKeys';
 import { permissionCamera } from '../../../utils/permissions'
+
+import { requestPost, requestPostWithToken, API, requestGet } from '../../../utils/API'
 
 import {
     TRAVELER,
@@ -42,7 +48,7 @@ import {
 const { height } = Dimensions.get('screen');
 
 const REGEX_EMAIL = /^\w+([\.+-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,})+$/;
-const REGEX_PHONE = /(([+][(]?[0-9]{1,3}[)]?)|([(]?[0-9]{4}[)]?))\s*[)]?[-\s\.]?[(]?[0-9]{1,3}[)]?([-\s\.]?[0-9]{3})([-\s\.]?[0-9]{3,4})/g;
+const REGEX_PHONE = /(([+][(]?[0-9]{1,3}[)]?)|([(]?[0-9]{4}[)]?))\s*[)]?[-\s\.]?[(]?[0-9]{1,3}[)]?([-\s\.]?[0-9]{3})([-\s\.]?[0-9]{3,4})/;
 const REGEX_NAME = /\b([A-ZÀ-ÿ][-,a-z. ']+[ ]*)+/gm
 
 const imagePickerOptions = {
@@ -54,74 +60,74 @@ const imagePickerOptions = {
     // cropperCircleOverlay: true,
     compressImageQuality: 1.0,
 };
+const inputAccessoryViewID = 'SignUpScreen'
 
 export default class SignUpScreen extends Component {
     constructor(props) {
         super(props);
 
         const { params } = props.route
+        const currentUser = Preference.get(preferenceKeys.CURRENT_USER)
+        let userId = -1
         let email = ''
-        let name = ''
+        let name = 'Ali Rehman'
         let userType = TRAVELER
         let isModeEdit = false
-        let phoneNumber = ''
-        let selectedTypeOfOrganization = ''
-        let password = ''
+        let phoneNumber = '12345678'
+        let profileImage = ''
+        let password = '123456'
+        let selectedCountryCode = { callingCode: ["1"], flag: "flag-us", name: { common: "United States" } }
         if (params) {
             if (params.email) email = params.email
             if (params.userType) userType = params.userType
             if (params.isModeEdit) {
                 isModeEdit = params.isModeEdit
-                if (params.name) name = params.name
-                if (params.phoneNumber) phoneNumber = params.phoneNumber
-                if (params.selectedTypeOfOrganization) selectedTypeOfOrganization = params.selectedTypeOfOrganization
-                if (params.password) password = params.password
+                password = '1234567890'
+                if (currentUser) {
+                    const { id, country_code, phone, image } = currentUser
+                    if (id) userId = id
+                    if (currentUser.name) name = currentUser.name
+                    if (currentUser.email) email = currentUser.email
+                    if (phone) phoneNumber = phone
+                    if (image) profileImage = image
+                    if (country_code) {
+                        let callingCode = country_code.replace('+', '')
+                        selectedCountryCode = listOfContries.find((item) => item.callingCode[0] == callingCode)
+                    }
+                }
             }
         }
 
         this.state = {
-            loading: false,
+            loading: true,
+            loadingOnCreateAccount: false,
+            loadingOnSetNewPassword: false,
+            percentCompleted: 0,
             userType: userType,
             isModeEdit: isModeEdit,
             email: email,
             profileStatus: ACTIVE,
             name: name,
-            selectedCountryCode: {
-                callingCode: [
-                    "1"
-                ],
-                flag: "flag-us",
-                name: {
-                    common: "United States",
-                }
-            },
+            selectedCountryCode: selectedCountryCode,
             phoneNumber: phoneNumber,
-            typesOfOrganizations: [
-                { id: 1, name: 'Hospital', isChecked: false },
-                { id: 2, name: 'Company Staff', isChecked: false },
-                { id: 3, name: 'Company One', isChecked: false },
-                { id: 4, name: 'Company Type 4', isChecked: false },
-                { id: 4, name: 'Company New', isChecked: false },
-            ],
-            selectedTypeOfOrganization: selectedTypeOfOrganization,
+            typesOfOrganizations: [],
+            selectedTypeOfOrganization: '',
             previousSelectedIndex: 0,
             services: [
-                { id: 1, name: 'Doctor', isChecked: false },
-                { id: 2, name: 'CNA', isChecked: false },
-                { id: 3, name: 'Nurse', isChecked: false },
-                { id: 4, name: 'Service 4', isChecked: false },
-                { id: 4, name: 'Service 5', isChecked: false },
-                { id: 4, name: 'Service 6', isChecked: false },
-                { id: 4, name: 'Service 7', isChecked: false },
-                { id: 4, name: 'Service 8', isChecked: false },
+                { id: 2, name: 'Doctor' },
+                { id: 'aldskjf', name: 'Eye spacialist' },
+                { id: 2, name: 'Doctor' },
+                { id: 'aldskjf', name: 'Eye spacialist' },
+                { id: 2, name: 'Doctor' },
+                { id: 'aldskjf', name: 'Eye spacialist' },
             ],
+            profileImage: profileImage,
             selectedServices: [],
             password: password,
             isHiddenPassword: true,
-            confirmPassword: '',
+            confirmPassword: '123456',
             isHiddenConfirmPassword: true,
             rememberPassword: true,
-            profileImage: '',
             isOpenCountrySelector: false,
             showOptionModal: false,
             showPasswordChangeModal: false,
@@ -136,7 +142,88 @@ export default class SignUpScreen extends Component {
     }
 
     componentDidMount() {
+        if (this.state.userType == TRAVELER)
+            this.getServices()
+        else
+            this.getOrganizations()
+    }
 
+    getServices = () => {
+        this.setState({ loading: true })
+        requestGet(API.GET_SERVICES).then((response) => {
+            if (response.status == 200) {
+                this.setState({ loading: false })
+                if (response.data) {
+                    this.setState({ services: response.data }, () => {
+                        // const { isModeEdit, services } = this.state
+                        // if (isModeEdit) {
+                        //     const currentUser = Preference.get(preferenceKeys.CURRENT_USER)
+                        //     const { service } = currentUser
+                        //     let servicesTemp = services
+                        //     let selectedTypeOfOrganization = ''
+                        //     let previousSelectedIndex = 0
+                        //     typesOfOrganizations.map((item, index) => {
+                        //         if (item.id == organization) {
+                        //             selectedTypeOfOrganization = {
+                        //                 ...item,
+                        //                 isChecked: true
+                        //             }
+                        //             previousSelectedIndex = index
+                        //         }
+                        //     })
+                        //     if (selectedTypeOfOrganization) {
+                        //         typesOfOrganizationsTemp[previousSelectedIndex].isChecked = true
+                        //         this.setState({ selectedTypeOfOrganization, previousSelectedIndex, typesOfOrganizations: typesOfOrganizationsTemp })
+                        //     }
+                        // }
+                    })
+                }
+            } else {
+                Alert.alert(null, response.message)
+            }
+        }).catch((error) => {
+            this.setState({ loading: false })
+            console.log('getServices', 'error', error)
+        })
+    }
+
+    getOrganizations = () => {
+        this.setState({ loading: true })
+        requestGet(API.GET_ORGANIZATIONS).then((response) => {
+            if (response.status == 200) {
+                this.setState({ loading: false })
+                if (response.data) {
+                    this.setState({ typesOfOrganizations: response.data }, () => {
+                        const { isModeEdit, typesOfOrganizations } = this.state
+                        if (isModeEdit) {
+                            const currentUser = Preference.get(preferenceKeys.CURRENT_USER)
+                            const { organization } = currentUser
+                            let typesOfOrganizationsTemp = typesOfOrganizations
+                            let selectedTypeOfOrganization = ''
+                            let previousSelectedIndex = 0
+                            typesOfOrganizations.map((item, index) => {
+                                if (item.id == organization) {
+                                    selectedTypeOfOrganization = {
+                                        ...item,
+                                        isChecked: true
+                                    }
+                                    previousSelectedIndex = index
+                                }
+                            })
+                            if (selectedTypeOfOrganization) {
+                                typesOfOrganizationsTemp[previousSelectedIndex].isChecked = true
+                                this.setState({ selectedTypeOfOrganization, previousSelectedIndex, typesOfOrganizations: typesOfOrganizationsTemp })
+                            }
+                        }
+                    })
+                }
+            } else {
+                Alert.alert(null, response.message)
+            }
+        }).catch((error) => {
+            this.setState({ loading: false })
+            console.log('getOrganizations', 'error', error)
+        })
     }
 
     verifyFields = () => {
@@ -153,7 +240,7 @@ export default class SignUpScreen extends Component {
             confirmPassword,
             isModeEdit,
         } = this.state
-        console.log('phone', selectedCountryCode.callingCode[0] + phoneNumber)
+
         if (profileImage === '') {
             alert('Profile images is required')
             return false
@@ -166,9 +253,9 @@ export default class SignUpScreen extends Component {
         } else if (!REGEX_PHONE.test('+' + selectedCountryCode.callingCode[0] + phoneNumber)) {
             alert('Invalid phone format')
             return false
-        } else if (userType === TRAVELER && selectedServices.length === 0) {
-            alert('Select atleast on service')
-            return false
+            // } else if (userType === TRAVELER && selectedServices.length === 0) {
+            //     alert('Select at least on service')
+            //     return false
         } else if (userType === COMPANY && selectedTypeOfOrganization.length === '') {
             alert('Select your organization type')
             return false
@@ -191,32 +278,127 @@ export default class SignUpScreen extends Component {
 
     onCreateAccoutPress = () => {
         const { navigation } = this.props
-        const { userType } = this.state
+        const {
+            userType,
+            profileImage,
+            profileStatus,
+            name,
+            selectedCountryCode,
+            phoneNumber,
+            selectedServices,
+            selectedTypeOfOrganization,
+            email,
+            password,
+        } = this.state
 
         if (this.verifyFields()) {
-            Preference.set(preferenceKeys.HAS_SESSION, true)
-            Preference.set(preferenceKeys.USER_TYPE, userType)
-            Preference.set(preferenceKeys.CURRENT_USER, this.state)
+            Keyboard.dismiss()
+            let URL = ''
+            let navigateTo = ''
+            let formData = new FormData();
+            if (typeof profileImage != 'string') formData.append('image', profileImage)
+            formData.append('country_code', selectedCountryCode.callingCode[0])
+            formData.append('phone', phoneNumber)
+            formData.append('email', email)
+            formData.append('password', password)
+            formData.append('country_status', 'ali')
             if (userType == COMPANY) {
-                navigation.reset({
-                    index: 0,
-                    routes: [{ name: 'TravelAgencyStack' }],
-                });
-            } else {
-                navigation.reset({
-                    index: 0,
-                    routes: [{ name: 'TravelerStack' }],
-                });
+                URL = API.COMPANY_SIGN_UP
+                navigateTo = 'TravelAgencyStack'
+                formData.append('company_name', name)
+                formData.append('type_of_organization', selectedTypeOfOrganization.id)
+                formData.append('plan', '1')
             }
+            else {
+                URL = API.TRAVELER_SIGN_UP
+                navigateTo = 'TravelerStack'
+                formData.append('full_name', name)
+                formData.append('profile_status', profileStatus)
+                formData.append('service', selectedServices)
+            }
+            this.setState({ loadingOnCreateAccount: true, percentCompleted: 0 })
+            requestPost(URL, formData, {}, { onUploadProgress: this.onUploadProgress }).then((response) => {
+                this.setState({ loadingOnCreateAccount: false })
+                console.log('response', response)
+                if (response.status == 200) {
+                    const { data, token } = response
+                    Preference.set(preferenceKeys.HAS_SESSION, true)
+                    Preference.set(preferenceKeys.USER_TYPE, userType)
+                    Preference.set(preferenceKeys.CURRENT_USER, data)
+                    Preference.set(preferenceKeys.AUTH_TOKEN, `Bearer ${token}`)
+                    navigation.reset({
+                        index: 0,
+                        routes: [{ name: navigateTo }],
+                    });
+                } else {
+                    Alert.alert(null, response.message)
+                }
+            }).catch(() => {
+                this.setState({ loadingOnCreateAccount: false })
+                Alert.alert(null, 'Something went wrong')
+            })
         }
     }
 
     onSavePress = () => {
         const { navigation } = this.props
+        const {
+            userType,
+            profileImage,
+            profileStatus,
+            name,
+            selectedCountryCode,
+            phoneNumber,
+            selectedServices,
+            selectedTypeOfOrganization,
+            email,
+            password,
+        } = this.state
 
         if (this.verifyFields()) {
-            navigation.goBack()
+            Keyboard.dismiss()
+            let URL = ''
+            let formData = new FormData();
+            if (typeof profileImage != 'string') formData.append('image', profileImage)
+            formData.append('country_code', selectedCountryCode.callingCode[0])
+            formData.append('phone', phoneNumber)
+            formData.append('email', email)
+            formData.append('password', password)
+            if (userType == COMPANY) {
+                URL = API.UPDATE_COMPANY_PROFILE
+                navigateTo = 'TravelAgencyStack'
+                formData.append('company_name', name)
+                formData.append('type_of_organization', selectedTypeOfOrganization.id)
+            }
+            else {
+                URL = API.UPDATE_TRAVELER_PROFILE
+                navigateTo = 'TravelerStack'
+                formData.append('full_name', name)
+                formData.append('profile_status', profileStatus)
+                formData.append('service', selectedServices)
+            }
+            this.setState({ loadingOnCreateAccount: true, percentCompleted: 0 })
+            requestPostWithToken(URL, formData, {}, { onUploadProgress: this.onUploadProgress }).then((response) => {
+                this.setState({ loadingOnCreateAccount: false })
+                console.log('response', response)
+                if (response.status == 200) {
+                    const { data, message } = response
+                    Preference.set(preferenceKeys.CURRENT_USER, data)
+                    Alert.alert(null, message)
+                    // navigation.goBack()
+                } else {
+                    Alert.alert(null, message)
+                }
+            }).catch(() => {
+                this.setState({ loadingOnCreateAccount: false })
+                Alert.alert(null, 'Something went wrong')
+            })
         }
+    }
+
+    onUploadProgress = (progressEvent) => {
+        var _percentCompleted = (Math.round((progressEvent.loaded * 100) / progressEvent.total)) - 1
+        this.setState({ percentCompleted: _percentCompleted })
     }
 
     verifyFieldsForPasswordChange = () => {
@@ -242,15 +424,29 @@ export default class SignUpScreen extends Component {
     }
 
     onSetAsNewPasswrodPress = () => {
-        const { navigation } = this.state
+        const { navigation } = this.props
+        const { oldPassword, newPassword } = this.state
         if (this.verifyFieldsForPasswordChange()) {
+            let formData = new FormData();
+            formData.append('old_password', oldPassword)
+            formData.append('new_password', newPassword)
+            this.setState({ loadingOnSetNewPassword: true })
+            requestPostWithToken(API.CHANGE_PASSWORD, formData).then((response) => {
+                if (response.status == 200) {
+                    this.setState({ loadingOnSetNewPassword: false, showPasswordChangeModal: false, oldPassword: '', newPassword: '', confirmNewPassword: '', showSuccessModal: true }, () => {
+                        setTimeout(() => {
+                            this.setState({ showSuccessModal: false }, () => {
 
-            this.setState({ showPasswordChangeModal: false, showSuccessModal: true, })
-            setTimeout(() => {
-                this.setState({ showSuccessModal: false, oldPassword: '', newPassword: '', confirmNewPassword: '' }, () => {
-
-                })
-            }, 4000);
+                            })
+                        }, 100);
+                    })
+                } else {
+                    Alert.alert(null, response.message)
+                }
+            }).catch(() => {
+                this.setState({ loadingOnSetNewPassword: false })
+                Alert.alert(null, 'Something went wrong')
+            })
         }
     }
 
@@ -343,7 +539,8 @@ export default class SignUpScreen extends Component {
             newPassword,
             isHiddenNewPassword,
             confirmNewPassword,
-            isHiddenConfirmNewPassword
+            isHiddenConfirmNewPassword,
+            loadingOnSetNewPassword
         } = this.state
 
         return (
@@ -355,7 +552,7 @@ export default class SignUpScreen extends Component {
                 <TouchableOpacity
                     activeOpacity={1}
                     onPress={() => {
-                        this.setState({ showPasswordChangeModal: !showPasswordChangeModal })
+                        this.setState({ showPasswordChangeModal: false, oldPassword: '', newPassword: '', confirmNewPassword: '', })
                     }}
                     style={styles.modalContainerStyle}>
                     <StatusBar barStyle='dark-content' backgroundColor='#00000060' />
@@ -365,6 +562,7 @@ export default class SignUpScreen extends Component {
                         <Text style={{ fontWeight: '600', fontSize: 16, color: 'black', alignSelf: 'center', marginBottom: 10 }}>{'Setup New Password'}</Text>
                         <InputField
                             fieldRef={ref => this.fieldOldPassword = ref}
+                            onParentPress={() => { if (this.fieldOldPassword) this.fieldOldPassword.focus() }}
                             inputContainer={{ paddingRight: 10, backgroundColor: colors.background }}
                             value={oldPassword}
                             hideShadowElevation={true}
@@ -385,6 +583,7 @@ export default class SignUpScreen extends Component {
                         />
                         <InputField
                             fieldRef={ref => this.fieldNewPassword = ref}
+                            onParentPress={() => { if (this.fieldNewPassword) this.fieldNewPassword.focus() }}
                             inputContainer={{ paddingRight: 10, backgroundColor: colors.background }}
                             value={newPassword}
                             hideShadowElevation={true}
@@ -405,6 +604,7 @@ export default class SignUpScreen extends Component {
                         />
                         <InputField
                             fieldRef={ref => this.fieldConfrimNewPassword = ref}
+                            onParentPress={() => { if (this.fieldConfrimNewPassword) this.fieldConfrimNewPassword.focus() }}
                             inputContainer={{ paddingRight: 10, backgroundColor: colors.background }}
                             value={confirmNewPassword}
                             hideShadowElevation={true}
@@ -423,6 +623,9 @@ export default class SignUpScreen extends Component {
                             }}
                         />
                         <Button
+                            activityIndicatorProps={{
+                                loading: loadingOnSetNewPassword
+                            }}
                             containerStyle={{ backgroundColor: colors.green, marginTop: 30, marginBottom: 0 }}
                             buttonTextStyle={{ color: colors.white }}
                             buttonText={'Set as New Passwrod'}
@@ -455,7 +658,7 @@ export default class SignUpScreen extends Component {
                         </View>
                         <Image
                             style={{ alignSelf: 'center', width: 150, height: 150, resizeMode: 'contain', marginVertical: 10 }}
-                            source={images.logo}
+                            source={images.success}
                         />
                         <Text style={styles.modalSuccessText}>{'New password is successfully set'}</Text>
                     </View>
@@ -480,6 +683,7 @@ export default class SignUpScreen extends Component {
     render() {
         const {
             loading,
+            loadingOnCreateAccount,
             email,
             userType,
             isModeEdit,
@@ -498,7 +702,7 @@ export default class SignUpScreen extends Component {
             isHiddenConfirmPassword,
             profileImage,
             isOpenCountrySelector,
-            showPasswordChangeModal
+            percentCompleted
         } = this.state
         const { navigation } = this.props
 
@@ -529,12 +733,13 @@ export default class SignUpScreen extends Component {
                     showsHorizontalScrollIndicator={false}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ flexGrow: 1 }}
+                    extraHeight={160}
                     style={{ flexGrow: 1, width: '100%', paddingHorizontal: 30, paddingTop: 20, paddingBottom: 50 }}>
                     <View style={{ flex: 1 }}>
                         <View style={styles.profileImageContainerStyle}>
                             <Image
                                 style={{ width: 134, height: 134, borderRadius: 67, resizeMode: 'cover' }}
-                                source={profileImage ? { uri: profileImage.uri } : images.user}
+                                source={profileImage ? { uri: profileImage.uri ? profileImage.uri : profileImage } : images.user}
                             />
                             <TouchableOpacity
                                 // activeOpacity={0.7}
@@ -601,6 +806,7 @@ export default class SignUpScreen extends Component {
 
                         <InputField
                             fieldRef={ref => this.fieldName = ref}
+                            onParentPress={() => { if (this.fieldName) this.fieldName.focus() }}
                             value={name}
                             autoCapitalize={'words'}
                             placeholder={userType == COMPANY ? 'Company Name' : 'Full Name'}
@@ -613,6 +819,7 @@ export default class SignUpScreen extends Component {
                             onSubmitEditing={() => {
                                 this.fieldPhoneNumber.focus()
                             }}
+                            inputAccessoryViewID={inputAccessoryViewID}
                         />
                         <View style={{ flexDirection: 'row' }}>
                             <TouchableOpacity
@@ -633,6 +840,7 @@ export default class SignUpScreen extends Component {
                             </TouchableOpacity>
                             <InputField
                                 fieldRef={ref => this.fieldPhoneNumber = ref}
+                                onParentPress={() => { if (this.fieldPhoneNumber) this.fieldPhoneNumber.focus() }}
                                 inputContainer={{ flex: 1, marginLeft: 10 }}
                                 value={phoneNumber}
                                 autoCapitalize={'none'}
@@ -648,6 +856,7 @@ export default class SignUpScreen extends Component {
                                     // Keyboard.dismiss()
                                     this.fieldEmail.focus()
                                 }}
+                                inputAccessoryViewID={inputAccessoryViewID}
                             />
                         </View>
 
@@ -698,6 +907,7 @@ export default class SignUpScreen extends Component {
                         }
                         <InputField
                             fieldRef={ref => this.fieldEmail = ref}
+                            onParentPress={() => { if (this.fieldEmail) this.fieldEmail.focus() }}
                             value={email}
                             autoCapitalize={'none'}
                             placeholder={'Email Address'}
@@ -711,9 +921,12 @@ export default class SignUpScreen extends Component {
                             onSubmitEditing={() => {
                                 this.fieldPassword.focus()
                             }}
+                            inputAccessoryViewID={inputAccessoryViewID}
                         />
                         <InputField
                             fieldRef={ref => this.fieldPassword = ref}
+                            onParentPress={() => { if (this.fieldPassword) this.fieldPassword.focus() }}
+                            editable={!isModeEdit}
                             inputContainer={{ paddingRight: 10 }}
                             value={password}
                             placeholder={'Password'}
@@ -735,10 +948,12 @@ export default class SignUpScreen extends Component {
                                 }
                             }}
                             rightText={isModeEdit ? 'Change' : false}
+                            inputAccessoryViewID={inputAccessoryViewID}
                         />
                         {!isModeEdit &&
                             <InputField
                                 fieldRef={ref => this.fieldConfrimPassword = ref}
+                                onParentPress={() => { if (this.fieldConfrimPassword) this.fieldConfrimPassword.focus() }}
                                 inputContainer={{ paddingRight: 10 }}
                                 value={confirmPassword}
                                 placeholder={'Confirm Password'}
@@ -747,16 +962,17 @@ export default class SignUpScreen extends Component {
                                     this.setState({ confirmPassword: text })
                                 }}
                                 onSubmitEditing={() => {
-                                    this.fieldPassword.focus()
+                                    Keyboard.dismiss()
                                 }}
                                 rightIcon={isHiddenConfirmPassword ? icons.eyeOpen : icons.eyeClose}
                                 rightIconStyle={{ tintColor: '#A4A4A4' }}
                                 onRightIconPress={() => {
                                     this.setState({ isHiddenConfirmPassword: !isHiddenConfirmPassword })
                                 }}
+                                inputAccessoryViewID={inputAccessoryViewID}
                             />
                         }
-                        {/* {userType == TRAVELER && */}
+                        {userType == COMPANY &&
                             <ButtonWithIcon
                                 containerStyle={{ backgroundColor: colors.lightGrey, paddingHorizontal: 20 }}
                                 buttonTextStyle={{ color: colors.mediumGrey, fontSize: 14 }}
@@ -765,9 +981,10 @@ export default class SignUpScreen extends Component {
                                     navigation.navigate('PaymentPlanScreen')
                                 }}
                             />
-                        {/* } */}
+                        }
                     </View>
                     <Button
+                        activityIndicatorProps={{ loading: loadingOnCreateAccount }}
                         containerStyle={{ backgroundColor: (userType == COMPANY && !isModeEdit) ? colors.primary : colors.green, marginBottom: 70 }}
                         buttonTextStyle={{ color: colors.white }}
                         buttonText={isModeEdit ? 'Save' : 'Create Account'}
@@ -794,6 +1011,13 @@ export default class SignUpScreen extends Component {
                             onCloseEnd={() => { this.setState({ isOpenCountrySelector: false }) }}
                         />
                     </View>
+                }
+                <KeyboardAccessoryView inputAccessoryViewID={inputAccessoryViewID} />
+                <Loader loading={loading} />
+                {loadingOnCreateAccount &&
+                    <SafeAreaView style={{ width: '100%', height: 5, top: 0, position: 'absolute', justifyContent: 'center' }}>
+                        <View style={{ width: (percentCompleted + '%'), height: 5, backgroundColor: colors.primary }}></View>
+                    </SafeAreaView>
                 }
             </View>
         )

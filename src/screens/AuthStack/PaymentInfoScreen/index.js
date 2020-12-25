@@ -121,7 +121,8 @@ export default class PaymentInfoScreen extends Component {
 
     onPayAndProceedPress = () => {
         if (this.verifyFields()) {
-            Alert.alert(null, 'Under Development')
+            this.props.navigation.pop(2)
+            // Alert.alert(null, 'Under Development')
         }
     }
 
@@ -179,6 +180,7 @@ export default class PaymentInfoScreen extends Component {
                                 buttonTextStyle={{ color: colors.black, fontSize: 14, fontWeight: '600' }}
                                 buttonText={'Link PayPal account'}
                                 onPressButton={() => {
+                                    // navigation.pop(2)
                                     Alert.alert(null, 'Under Development')
                                 }}
                             />
@@ -186,6 +188,7 @@ export default class PaymentInfoScreen extends Component {
                             <Text style={{ fontWeight: '600', marginTop: 20 }}>{'Add Credit Card'}</Text>
                             <InputField
                                 fieldRef={ref => this.fieldCardNumber = ref}
+                                onParentPress={() => { if (this.fieldCardNumber) this.fieldCardNumber.focus() }}
                                 value={cardNumber}
                                 leftIcon={icons.card}
                                 leftIconStyle={{ tintColor: colors.primary }}
@@ -227,6 +230,7 @@ export default class PaymentInfoScreen extends Component {
                             />
                             <InputField
                                 fieldRef={ref => this.fieldName = ref}
+                                onParentPress={() => { if (this.fieldName) this.fieldName.focus() }}
                                 value={name}
                                 leftIcon={icons.user}
                                 leftIconStyle={{ tintColor: colors.primary }}
@@ -242,10 +246,11 @@ export default class PaymentInfoScreen extends Component {
                             />
                             <View style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between' }}>
                                 <InputField
+                                    fieldRef={ref => this.fieldExpiryDate = ref}
+                                    onParentPress={() => { if (this.fieldExpiryDate) this.fieldExpiryDate.focus() }}
                                     leftIcon={icons.calendar}
                                     leftIconStyle={{ tintColor: colors.primary }}
                                     inputContainer={{ flex: 1, marginRight: 5 }}
-                                    fieldRef={ref => this.fieldExpiryDate = ref}
                                     value={expiryDate}
                                     placeholder={'Expiry date'}
                                     keyboardType={'number-pad'}
@@ -267,8 +272,9 @@ export default class PaymentInfoScreen extends Component {
                                     }}
                                 />
                                 <InputField
-                                    inputContainer={{ flex: 1, marginLeft: 5 }}
                                     fieldRef={ref => this.fieldCVC = ref}
+                                    onParentPress={() => { if (this.fieldCVC) this.fieldCVC.focus() }}
+                                    inputContainer={{ flex: 1, marginLeft: 5, paddingRight: 5 }}
                                     value={cvv}
                                     leftIcon={icons.lock}
                                     leftIconStyle={{ tintColor: colors.primary }}

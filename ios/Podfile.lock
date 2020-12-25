@@ -314,12 +314,12 @@ PODS:
     - React
   - RNGestureHandler (1.8.0):
     - React
-  - RNImageCropPicker (0.35.1):
+  - RNImageCropPicker (0.33.4):
     - React-Core
     - React-RCTImage
-    - RNImageCropPicker/QBImagePickerController (= 0.35.1)
+    - RNImageCropPicker/QBImagePickerController (= 0.33.4)
     - TOCropViewController
-  - RNImageCropPicker/QBImagePickerController (0.35.1):
+  - RNImageCropPicker/QBImagePickerController (0.33.4):
     - React-Core
     - React-RCTImage
     - TOCropViewController
@@ -546,7 +546,7 @@ SPEC CHECKSUMS:
   ReactCommon: 4167844018c9ed375cc01a843e9ee564399e53c3
   RNCMaskedView: 5a8ec07677aa885546a0d98da336457e2bea557f
   RNGestureHandler: 7a5833d0f788dbd107fbb913e09aa0c1ff333c39
-  RNImageCropPicker: 16951bc02411f50c4d197488ed6406a23dc3b5f1
+  RNImageCropPicker: 530e8b69d97f80e03bc9f3b2cb64412312824330
   RNPermissions: 5df468064df661a4c8c017e2791ce90d7695eea5
   RNReanimated: e03f7425cb7a38dcf1b644d680d1bfc91c3337ad
   RNScreens: 2ad555d4d9fa10b91bb765ca07fe9b29d59573f0
@@ -556,6 +556,6 @@ SPEC CHECKSUMS:
   Yoga: 7d13633d129fd179e01b8953d38d47be90db185a
   YogaKit: f782866e155069a2cca2517aafea43200b01fd5a
 
-PODFILE CHECKSUM: d24f296c023e58e8faa91d026a4ce781b258b76b
+PODFILE CHECKSUM: 1563037b5420fee72cc8cbf9a6f20def6f4c2a33
 
 COCOAPODS: 1.10.0

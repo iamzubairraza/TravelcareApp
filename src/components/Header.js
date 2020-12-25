@@ -80,6 +80,7 @@ const styles = StyleSheet.create({
         width: '100%',
         backgroundColor: colors.transparent,
         alignItems: 'center',
+        marginTop: Platform.OS == 'android'? StatusBar.currentHeight : 0
     },
     buttonContainer: {
         width: 60,

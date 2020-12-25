@@ -8,20 +8,15 @@ import {
     TouchableOpacity,
     StyleSheet, FlatList,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import Preference from 'react-native-preference'
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import moment from 'moment'
-import Animated from 'react-native-reanimated';
-import BottomSheet from 'reanimated-bottom-sheet';
 
 import Button from '../../../components/Button'
-import InputField from '../../../components/InputField'
-import images from '../../../assets/images'
 import icons from '../../../assets/icons'
 import colors from '../../../utils/colors';
 import BackGround from '../../../components/HomeBackGround';
 import Header from '../../../components/Header';
+import { API, requestGetWithToken, requestPostWithToken } from '../../../utils/API';
+import Loader from '../../../components/Loader';
 
 export default class ManageOffersScreen extends Component {
     constructor(props) {
@@ -43,25 +38,28 @@ export default class ManageOffersScreen extends Component {
             loading: false,
             mainHeading: "Manage Offers",
             mainText: "Manage and organize your existing offers or create a new one.",
-            offersList: [
-                {
-                    offerName: 'Group Travel Promo',
-                    desctiption: 'Save up to80% with our group travel promo and it\'s completely free.',
-                    sentRecipients: 27,
-                    acceptedRecipients: 2,
-                },
-                {
-                    offerName: 'Travel Bundle',
-                    desctiption: 'Save up to80% with our group travel promo and it\'s completely free.',
-                    sentRecipients: 32,
-                    acceptedRecipients: 5,
-                },
-            ]
+            offersList: []
         }
     }
 
     componentDidMount() {
+        this.getCompanyOffers()
+    }
 
+    getCompanyOffers = () => {
+        this.setState({ loading: true })
+        requestGetWithToken(API.GET_MANAGE_OFFERS).then((response) => {
+            this.setState({ loading: false })
+            if (response.status == 200) {
+                // console.log('getCompanyOffers', 'response.data', response.data)
+                this.setState({ offersList: response.data })
+            } else {
+                Alert.alert(null, response.message)
+            }
+        }).catch((error) => {
+            this.setState({ loading: false })
+            console.log('getCompanyOffers', 'error', error)
+        })
     }
 
     renderJobItem = (item, index) => {
@@ -72,18 +70,18 @@ export default class ManageOffersScreen extends Component {
                 activeOpacity={0.6}
                 style={[styles.offerItemStyle, { marginBottom: index + 1 == offersList.length ? 120 : 15 }]}
                 onPress={() => {
-                    if (item.offerName === 'Group Travel Promo')
+                    if (item.title === 'Group Travel Promo')
                         navigation.navigate('GroupTravel')
                 }}>
-                <Text style={{ fontSize: 20, color: colors.green, fontWeight: "bold" }}>{item.offerName}</Text>
+                <Text style={{ fontSize: 20, color: colors.green, fontWeight: "bold" }}>{item.title}</Text>
                 <View style={{ width: '70%' }}>
-                    <Text style={{ fontSize: 11, color: colors.grey, marginTop: 5 }}>{item.desctiption}</Text>
+                    <Text style={{ fontSize: 11, color: colors.grey, marginTop: 5 }}>{item.short_description}</Text>
                 </View>
                 <View style={[styles.horizontalDivider, { marginTop: 20, marginBottom: 10 }]} />
                 <View style={{ width: '100%', flexDirection: 'row' }}>
                     <Text style={{ fontSize: 11, color: colors.grey, marginTop: 5 }}>
-                        {`Sent to ${item.sentRecipients} recipients,`}
-                        <Text style={{ color: colors.green }}>{` ${item.acceptedRecipients} accepted`}</Text>
+                        {`Sent to ${item.recipients} recipients,`}
+                        <Text style={{ color: colors.green }}>{` ${item.accepted} accepted`}</Text>
                     </Text>
                     <View style={{ flex: 1 }} />
                     <View style={{
@@ -106,7 +104,7 @@ export default class ManageOffersScreen extends Component {
     }
 
     render() {
-        const { user, offersList } = this.state
+        const { loading, offersList } = this.state
         const { navigation } = this.props
         return (
             <View style={styles.container}>
@@ -142,12 +140,13 @@ export default class ManageOffersScreen extends Component {
                             buttonTextStyle={{ color: colors.white }}
                             buttonText={'Add New Offer'}
                             onPressButton={() => {
-                                navigation.navigate('NewOfferScreen')
+                                navigation.navigate('NewOfferScreen', { updateOffers: this.getCompanyOffers })
                             }}
                         />
                     </View>
                 </View>
-            </View >
+                <Loader loading={loading} />
+            </View>
         )
     }
 }

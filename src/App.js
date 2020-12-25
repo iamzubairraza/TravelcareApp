@@ -7,12 +7,14 @@
  */
 
 import React, { Component } from 'react';
-import { View, SafeAreaView, Text, StyleSheet } from 'react-native'
+import { LogBox, StatusBar } from 'react-native'
 
 import Routing from './Routing'
+import colors from './utils/colors';
 
-console.disableYellowBox = true
-console.ignoredYellowBox = true
+LogBox.ignoreAllLogs(true)
+StatusBar.setTranslucent(true)
+StatusBar.setBackgroundColor(colors.transparent)
 
 export default class App extends Component {
   render() {
@@ -21,13 +23,3 @@ export default class App extends Component {
     );
   }
 }
-const styles = StyleSheet.create({
-  bannerContainer: {
-    width: '100%',
-    height: 60,
-    backgroundColor: 'grey',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  bannerText: { color: 'white' }
-})

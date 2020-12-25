@@ -22,28 +22,27 @@ import icons from '../../../assets/icons'
 import colors from '../../../utils/colors';
 import BackGround from '../../../components/HomeBackGround';
 import Header from '../../../components/Header';
-
-
+import { API, requestGetWithToken } from '../../../utils/API';
 
 export default class OfferAcceptorDetailScreen extends Component {
     constructor(props) {
         super(props);
 
-        let user = {
-            userImage: require('../../../assets/images/top_traveller.png'),
-            userName: 'Kevin E.Parker',
+        let traveler = {
+            image: "https://travel.crmstock.io/storage/app/TravelerImages/H9j4vHyjXwv9y4EYv8qt61SVwFmdkrgqZgaDMClV.jpeg",
+            name: 'Kevin E.Parker',
             jobTitle: 'Chief of Surgery',
             jobsDone: '80 jobs done',
         }
         const { params } = props.route
 
         if (params) {
-            if (params.user) user = params.user
+            if (params.traveler) traveler = params.traveler
         }
 
         this.state = {
             loading: false,
-            user: user,
+            traveler: traveler,
             anyItemSelected: false,
             displayBottomSheet: false,
             mainHeading: "Accepted Offers",
@@ -68,7 +67,26 @@ export default class OfferAcceptorDetailScreen extends Component {
     }
 
     componentDidMount() {
+        const { params } = this.props.route
+        console.log('getTravelerDetails', 'params?.traveler?.id', params?.traveler?.id)
+        this.getTravelerDetails(params?.traveler?.id)
+    }
 
+    getTravelerDetails = (id) => {
+        // this.setState({ loading: true })
+        requestGetWithToken(API.GET_TRAVELER_DETAILS + '/' + id).then((response) => {
+            this.setState({ loading: false })
+            if (response.status == 200) {
+                console.log('getTravelerDetails', 'travelers', response)
+                if (response.data)
+                    this.setState({ traveler: response.data })
+            } else {
+                Alert.alert(null, response.message)
+            }
+        }).catch((error) => {
+            this.setState({ loading: false })
+            console.log('getOrganizations', 'error', error)
+        })
     }
 
     renderJobItem = (item, index) => {
@@ -107,14 +125,14 @@ export default class OfferAcceptorDetailScreen extends Component {
     }
 
     render() {
-        const { user, myJobHistoryList } = this.state
+        const { traveler, myJobHistoryList } = this.state
         const { navigation } = this.props
         return (
             <View style={styles.container}>
                 <View style={{ width: '100%', height: 200 }}>
                     <ImageBackground
-                        style={{ width: '100%', height: '100%', resizeMode: 'cover' }}
-                        source={images.doctor}>
+                        style={{ width: '100%', height: '100%', resizeMode: 'cover', backgroundColor: colors.primary }}
+                        source={{ uri: traveler?.image }}>
                         <Header
                             onLeftAction={() => {
                                 navigation.goBack()
@@ -125,9 +143,9 @@ export default class OfferAcceptorDetailScreen extends Component {
                     </ImageBackground>
                 </View>
                 <View style={[styles.jobItemStyle, { marginTop: 20, flexDirection: 'column', alignItems: 'flex-start' }]}>
-                    <Text style={{ fontSize: 20, color: colors.black, fontWeight: "bold" }}>{user.userName}</Text>
-                    <Text style={{ fontSize: 11, color: colors.primary }}>{user.jobTitle}</Text>
-                    <Text style={{ fontSize: 11, color: colors.grey }}>{user.jobsDone}</Text>
+                    <Text style={{ fontSize: 20, color: colors.black, fontWeight: "bold" }}>{traveler.name}</Text>
+                    <Text style={{ fontSize: 11, color: colors.primary }}>{traveler.jobTitle}</Text>
+                    <Text style={{ fontSize: 11, color: colors.grey }}>{traveler.jobsDone}</Text>
                 </View>
                 <View style={{ paddingHorizontal: 15 }}>
                     <Text style={{ marginVertical: 20, color: colors.mediumGrey }}>{'My Job History'}</Text>

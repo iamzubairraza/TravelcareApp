@@ -18,6 +18,8 @@ import images from '../../../assets/images'
 import icons from '../../../assets/icons'
 import colors from '../../../utils/colors';
 
+import { requestPost, API } from '../../../utils/API'
+
 export default class VerificationScreen extends Component {
     constructor(props) {
         super(props);
@@ -30,6 +32,8 @@ export default class VerificationScreen extends Component {
 
         this.state = {
             loading: false,
+            loadingOnVerify: false,
+            email: email,
             codeDigOne: '',
             codeDigTwo: '',
             codeDigThree: '',
@@ -55,16 +59,31 @@ export default class VerificationScreen extends Component {
 
     verifyPress = () => {
         const { navigation } = this.props
-
+        const { email, codeDigOne, codeDigTwo, codeDigThree, codeDigFour } = this.state
+        const code = codeDigOne + codeDigTwo + codeDigThree + codeDigFour
         if (this.verifyFields()) {
             Keyboard.dismiss()
-            // Alert.alert(null, 'Under Development')
-            navigation.navigate('SetupNewPasswordScreen')
+            let formData = new FormData();
+            formData.append('email', email)
+            formData.append('code', code)
+            this.setState({ loadingOnVerify: true })
+            requestPost(API.VERIFY_CODE, formData).then((response) => {
+                if (response.status == 200) {
+                    this.setState({ loadingOnSendMail: false })
+                    navigation.navigate('SetupNewPasswordScreen')
+                } else {
+                    Alert.alert(null, response.message)
+                }
+            }).catch(() => {
+                this.setState({ loadingOnSendMail: false })
+                // navigation.navigate('SetupNewPasswordScreen')
+                Alert.alert(null, 'Something went wrong')
+            })
         }
     }
 
     render() {
-        const { loading, codeDigOne, codeDigTwo, codeDigThree, codeDigFour } = this.state
+        const { loading, loadingOnVerify, codeDigOne, codeDigTwo, codeDigThree, codeDigFour } = this.state
         const { navigation } = this.props
 
         return (
@@ -84,12 +103,13 @@ export default class VerificationScreen extends Component {
                     style={{ flexGrow: 1, width: '100%', paddingHorizontal: 30, paddingVertical: 50 }}>
                     <Image
                         style={{ alignSelf: 'center', width: 150, height: 150, resizeMode: 'contain', marginVertical: 20 }}
-                        source={images.logo}
+                        source={images.code}
                     />
                     <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: 'row', justifyContent: "space-evenly" }}>
                             <InputField
                                 fieldRef={ref => this.fieldCodeDigOne = ref}
+                                onParentPress={() => { if (this.fieldCodeDigOne) this.fieldCodeDigOne.focus() }}
                                 value={codeDigOne}
                                 inputContainer={{ width: 55, paddingHorizontal: 0 }}
                                 inputStyle={{ fontSize: 24, textAlign: 'center' }}
@@ -113,6 +133,7 @@ export default class VerificationScreen extends Component {
                             />
                             <InputField
                                 fieldRef={ref => this.fieldCodeDigTwo = ref}
+                                onParentPress={() => { if (this.fieldCodeDigTwo) this.fieldCodeDigTwo.focus() }}
                                 value={codeDigTwo}
                                 inputContainer={{ width: 55, paddingHorizontal: 0 }}
                                 inputStyle={{ fontSize: 24, textAlign: 'center' }}
@@ -139,6 +160,7 @@ export default class VerificationScreen extends Component {
                             />
                             <InputField
                                 fieldRef={ref => this.fieldCodeDigThree = ref}
+                                onParentPress={() => { if (this.fieldCodeDigThree) this.fieldCodeDigThree.focus() }}
                                 value={codeDigThree}
                                 inputContainer={{ width: 55, paddingHorizontal: 0 }}
                                 inputStyle={{ fontSize: 24, textAlign: 'center' }}
@@ -165,6 +187,7 @@ export default class VerificationScreen extends Component {
                             />
                             <InputField
                                 fieldRef={ref => this.fieldCodeDigFour = ref}
+                                onParentPress={() => { if (this.fieldCodeDigFour) this.fieldCodeDigFour.focus() }}
                                 value={codeDigFour}
                                 inputContainer={{ width: 55, paddingHorizontal: 0 }}
                                 inputStyle={{ fontSize: 24, textAlign: 'center' }}
@@ -202,6 +225,9 @@ export default class VerificationScreen extends Component {
                         </View>
                     </View>
                     <Button
+                        activityIndicatorProps={{
+                            loading: loadingOnVerify
+                        }}
                         containerStyle={{ backgroundColor: colors.primary }}
                         buttonTextStyle={{ color: colors.white }}
                         buttonText={'Verify'}

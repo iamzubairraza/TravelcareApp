@@ -35,7 +35,7 @@ export default class PaymentPlanScreen extends Component {
 
         this.state = {
             loading: false,
-            selectedPeckage: ENTERPRISE
+            selectedPeckage: BASIC
         }
     }
 

@@ -7,23 +7,13 @@ import {
     TouchableOpacity,
     StyleSheet, FlatList,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import Preference from 'react-native-preference'
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import moment from 'moment'
 
-
-import Button from '../../../components/Button'
-import InputField from '../../../components/InputField'
-import images from '../../../assets/images'
 import icons from '../../../assets/icons'
 import colors from '../../../utils/colors';
 import BackGround from '../../../components/HomeBackGround';
 import Header from '../../../components/Header';
-
-import Animated from 'react-native-reanimated';
-import BottomSheet from 'reanimated-bottom-sheet';
-
 
 export default class GroupTravel extends Component {
     constructor(props) {
@@ -86,13 +76,14 @@ export default class GroupTravel extends Component {
                             borderColor: item.statusOffer ? colors.green : colors.yellow,
                             height: 80,
                             alignItems: 'center',
+                            justifyContent: 'center',
                             borderRadius: 40,
                             borderWidth: 1
                         }}>
                             <Image source={item.userImage} style={{
                                 width: 70,
                                 height: 70,
-                                resizeMode: 'contain',
+                                resizeMode: 'cover',
                                 borderRadius: 35
                             }} />
                         </View>

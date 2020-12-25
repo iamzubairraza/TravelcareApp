@@ -19,28 +19,43 @@ import colors from '../../../utils/colors';
 import BackGround from '../../../components/HomeBackGround';
 import Header from '../../../components/Header';
 import preferenceKeys from '../../../utils/preferenceKeys';
-
+import { API, requestGetWithToken } from '../../../utils/API';
+import Loader from '../../../components/Loader';
 
 export default class MyJobsScreen extends Component {
     constructor(props) {
         super(props);
         const currentUser = Preference.get(preferenceKeys.CURRENT_USER)
-        const { profileImage, name } = currentUser
+        console.log('currentUser', currentUser)
         this.state = {
             loading: false,
-            user: {
-                name: name,
-                profileImage: profileImage
-            }
+            currentUser: currentUser
         }
     }
 
     componentDidMount() {
+        this.getProfile()
+    }
 
+    getProfile = () => {
+        this.setState({ loading: true })
+        requestGetWithToken(API.GET_PROFILE).then((response) => {
+            this.setState({ loading: false })
+            if (response.status == 200) {
+                this.setState({ currentUser: response.data }, () => {
+                    Preference.get(preferenceKeys.CURRENT_USER, response.data)
+                })
+            } else {
+                Alert.alert(null, response.message)
+            }
+        }).catch((error) => {
+            this.setState({ loading: false })
+            console.log('getOrganizations', 'error', error)
+        })
     }
 
     render() {
-        const { user } = this.state
+        const { currentUser, loading } = this.state
         const { navigation } = this.props
         return (
             <View style={styles.container}>
@@ -50,11 +65,11 @@ export default class MyJobsScreen extends Component {
                         navigation.toggleDrawer()
                     }}
                     leftButtonContainerStyle={{ padding: 0, paddingLeft: 20 }}
-                    leftIcon={user.profileImage ? user.profileImage : images.dummyProfile}
+                    leftIcon={currentUser?.image ? { uri: currentUser?.image } : images.dummyProfile}
                     leftButtonIconStyle={[styles.userProfileContainer]}
                     centerComponent={
                         <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 20 }}>
-                            <Text style={{ fontSize: 20, color: colors.white, fontWeight: 'bold' }}>{`Hi ${user.name},`}</Text>
+                            <Text style={{ fontSize: 20, color: colors.white, fontWeight: 'bold' }}>{`Hi ${currentUser?.name},`}</Text>
                             <Text style={{ fontSize: 14, color: colors.white }}>{'What would you like to do today?'}</Text>
                         </View>
                     }
@@ -165,7 +180,7 @@ export default class MyJobsScreen extends Component {
                         </View>
                     </View>
                 </View>
-
+                <Loader loading={loading} />
             </View>
         )
     }

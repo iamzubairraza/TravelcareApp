@@ -22,8 +22,6 @@ import colors from '../../../utils/colors';
 import BackGround from '../../../components/HomeBackGround';
 import Header from '../../../components/Header';
 
-
-
 export default class TravelCompaniesScreen extends Component {
     constructor(props) {
         super(props);

@@ -4,7 +4,7 @@ import React from 'react';
 import { Platform, Text, View, TouchableOpacity, Keyboard, InputAccessoryView } from 'react-native';
 import colors from '../utils/colors';
 
-export const KeyboardAccessoryView = ({ inputAccessoryViewID, onPress = null }) => {
+export default KeyboardAccessoryView = ({ inputAccessoryViewID, onPress = null }) => {
     if (Platform.OS === 'ios') {
         return (
             <InputAccessoryView nativeID={inputAccessoryViewID}>
@@ -21,7 +21,7 @@ export const KeyboardAccessoryView = ({ inputAccessoryViewID, onPress = null }) 
                             Keyboard.dismiss()
                             if (onPress && typeof onPress == 'function') onPress()
                         }}>
-                        <Text style={{ color: colors.primary, fontSize: 22, marginHorizontal: 20 }}>DONE</Text>
+                        <Text style={{ color: colors.primary, fontSize: 18, marginHorizontal: 20 }}>DONE</Text>
                     </TouchableOpacity>
                 </View>
             </InputAccessoryView>

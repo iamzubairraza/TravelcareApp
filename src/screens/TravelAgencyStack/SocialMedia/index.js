@@ -12,7 +12,6 @@ import Preference from 'react-native-preference'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import moment from 'moment'
 
-
 import Button from '../../../components/Button'
 import InputField from '../../../components/InputField'
 import images from '../../../assets/images'
@@ -23,7 +22,6 @@ import Header from '../../../components/Header';
 
 import Animated from 'react-native-reanimated';
 import BottomSheet from 'reanimated-bottom-sheet';
-
 
 export default class SocialMedia extends Component {
     constructor(props) {

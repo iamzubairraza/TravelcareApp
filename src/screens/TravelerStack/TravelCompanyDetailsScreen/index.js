@@ -99,11 +99,11 @@ export default class TravelCompanyDetailsScreen extends Component {
         const { navigation } = this.props
         return (
             <TouchableOpacity
-                disabled={true}
+                // disabled={true}
                 activeOpacity={0.6}
                 style={styles.offerItemStyle}
                 onPress={() => {
-                    // navigation.navigate('TravelerListScreen')
+                    navigation.navigate('ReceivedOfferDetailsScreen')
                 }}>
                 <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 20, color: colors.green, fontWeight: "bold" }}>{item.offerName}</Text>

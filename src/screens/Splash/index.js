@@ -22,17 +22,6 @@ export default class Splash extends Component {
         }
     }
 
-    componentDidMount() {
-        const { navigation } = this.props
-        const hasSession = Preference.get(preferenceKeys.HAS_SESSION)
-        if (hasSession) {
-            const userType = Preference.get(preferenceKeys.USER_TYPE)
-            if (userType == TRAVELER) navigation.navigate('TravelerStack')
-            if (userType == COMPANY) navigation.navigate('TravelAgencyStack')
-            else navigation.navigate('AuthStack')
-        } //else navigation.navigate('AuthStack')
-    }
-
     render() {
         const { navigation } = this.props
         return (

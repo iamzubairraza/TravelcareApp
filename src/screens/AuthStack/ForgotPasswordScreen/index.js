@@ -18,6 +18,8 @@ import images from '../../../assets/images'
 import icons from '../../../assets/icons'
 import colors from '../../../utils/colors';
 
+import { requestPost, API } from '../../../utils/API'
+
 export default class ForgotPasswordScreen extends Component {
     constructor(props) {
         super(props);
@@ -56,15 +58,29 @@ export default class ForgotPasswordScreen extends Component {
 
     sendVerificationMailPress = () => {
         const { navigation } = this.props
-
+        const { email } = this.state
         if (this.verifyFields()) {
             Keyboard.dismiss()
-            navigation.navigate('VerificationScreen')
+            let formData = new FormData();
+            formData.append('email', email)
+            this.setState({ loadingOnSendMail: true })
+            requestPost(API.SEND_FORGOT_PASSWORD_EMAIL, formData).then((response) => {
+                if (response.status == 200) {
+                    this.setState({ loadingOnSendMail: false })
+                    navigation.navigate('VerificationScreen')
+                } else {
+                    Alert.alert(null, response.message)
+                }
+            }).catch(() => {
+                this.setState({ loadingOnSendMail: false })
+                // navigation.navigate('VerificationScreen')
+                Alert.alert(null, 'Something went wrong')
+            })
         }
     }
 
     render() {
-        const { loading, email } = this.state
+        const { loading, loadingOnSendMail, email, } = this.state
         const { navigation } = this.props
 
         return (
@@ -84,11 +100,12 @@ export default class ForgotPasswordScreen extends Component {
                     style={{ flexGrow: 1, width: '100%', paddingHorizontal: 30, paddingVertical: 50 }}>
                     <Image
                         style={{ alignSelf: 'center', width: 150, height: 150, resizeMode: 'contain', marginVertical: 20 }}
-                        source={images.logo}
+                        source={images.email}
                     />
                     <View style={{ flex: 1 }}>
                         <InputField
                             fieldRef={ref => this.fieldEmail = ref}
+                            onParentPress={() => { if (this.fieldEmail) this.fieldEmail.focus() }}
                             value={email}
                             autoCapitalize={'none'}
                             placeholder={'Email Address'}
@@ -106,6 +123,9 @@ export default class ForgotPasswordScreen extends Component {
                         </View>
                     </View>
                     <Button
+                        activityIndicatorProps={{
+                            loading: loadingOnSendMail
+                        }}
                         containerStyle={{ backgroundColor: colors.primary }}
                         buttonTextStyle={{ color: colors.white }}
                         buttonText={'Send Verification Mail'}
