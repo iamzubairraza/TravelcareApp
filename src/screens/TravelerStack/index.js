@@ -15,7 +15,8 @@ import TravelCompaniesScreen from './TravelCompaniesScreen'
 import TravelCompanyDetailsScreen from './TravelCompanyDetailsScreen'
 import ReceivedOffersScreen from './ReceivedOffersScreen'
 import ReceivedOfferDetailsScreen from './ReceivedOfferDetailsScreen'
-import SocialMedia from '../TravelAgencyStack/SocialMedia'
+import JobDetailsScreen from '../TravelAgencyStack/JobDetailsScreen'
+import ReviewsScreen from './ReviewsScreen'
 
 //Utils
 import colors from '../../utils/colors';
@@ -48,6 +49,7 @@ export default TravelerStack = () => (
         <Stack.Screen name="TravelCompanyDetailsScreen" component={TravelCompanyDetailsScreen} />
         <Stack.Screen name="ReceivedOffersScreen" component={ReceivedOffersScreen} />
         <Stack.Screen name="ReceivedOfferDetailsScreen" component={ReceivedOfferDetailsScreen} />
-        <Stack.Screen name="SocialMedia" component={SocialMedia} />
+        <Stack.Screen name="JobDetailsScreen" component={JobDetailsScreen} />
+        <Stack.Screen name="ReviewsScreen" component={ReviewsScreen} />
     </Stack.Navigator>
 );

@@ -128,13 +128,13 @@ class DropDownPicker extends React.Component {
         const { searchableText, dropdownListMarginTop, isVisible } = this.state
 
         return (
-            <View style={[containerStyle, { zIndex: 5000 }]}>
+            <View style={[styles.containerStyle, containerStyle]}>
                 <TouchableOpacity
                     onLayout={(event) => this.getLayout(event.nativeEvent.layout)}
                     disabled={disabled}
                     onPress={() => this.toggle()}
                     activeOpacity={1}
-                    style={[styles.dropDown, { flexDirection: 'row', flex: 1 }, style, this.state.isVisible && styles.noBottomRadius]}>
+                    style={[styles.dropDown, { flexDirection: 'row', flex: 1, minHeight: 55 }, style, this.state.isVisible && styles.noBottomRadius]}>
                     <View style={{ flex: 1 }}>
                         {multiple ?
                             selectedItem.length > 0 ?
@@ -169,12 +169,13 @@ class DropDownPicker extends React.Component {
                 <View style={[
                     styles.dropDown,
                     styles.dropDownBox,
-                    dropDownStyle,
                     !this.state.isVisible && styles.hidden, {
                         top: dropdownListMarginTop,
                         width: '100%',
                         maxHeight: dropDownMaxHeight,
-                    }
+                        zIndex: 5000
+                    },
+                    dropDownStyle,
                 ]}>
                     {
                         searchable && (
@@ -291,6 +292,9 @@ DropDownPicker.defaultProps = {
 };
 
 const styles = StyleSheet.create({
+    containerStyle: {
+        zIndex: 5000
+    },
     arrow: {
         flexDirection: 'row',
         justifyContent: 'center',
@@ -301,7 +305,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 5,
         backgroundColor: '#fff',
-        borderRadius: 5,
+        borderRadius: 10,
         borderWidth: 1,
         borderColor: '#dfdfdf',
         alignItems: 'center'
@@ -374,7 +378,9 @@ const styles = StyleSheet.create({
         backgroundColor: colors.white,
         padding: 5,
         borderRadius: 10,
-        marginRight: -2
+        marginRight: -2,
+        alignItems: 'center',
+        justifyContent: 'center'
     }
 });
 

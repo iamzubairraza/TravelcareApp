@@ -60,27 +60,51 @@ export default Button = (props) => {
 
 export const ButtonWithIcon = (props) => {
 
+    const {
+        containerStyle,
+        activityIndicatorProps,
+        onPressButton,
+        leftIcon,
+        buttonTextStyle,
+        buttonText
+    } = props
+
+    const {
+        loading,
+        size,
+        color,
+        style
+    } = activityIndicatorProps ? activityIndicatorProps : {}
+
     return (
         <TouchableOpacity
             activeOpacity={0.7}
-            style={[styles.container, props.containerStyle, { justifyContent: 'flex-start' }]}
+            style={[styles.container, containerStyle, { justifyContent: 'flex-start' }]}
             onPress={() => {
-                if (props.onPressButton && typeof props.onPressButton) {
-                    props.onPressButton()
+                if (onPressButton && typeof onPressButton) {
+                    onPressButton()
                 }
             }}>
-            {props.leftIcon &&
+            {leftIcon &&
                 <View style={[{ width: 30, height: 30, marginRight: 5, alignItems: 'center', justifyContent: 'center' }, props.leftIconStyle]}>
                     <Image
                         style={{ width: '100%', height: '100%', resizeMode: 'contain' }}
-                        source={props.leftIcon}
+                        source={leftIcon}
                     />
                 </View>
             }
-            <View style={{ flex: 1 }}>
-                <Text style={[styles.buttonTextStyle, props.buttonTextStyle]}>
-                    {props.buttonText}
+            <View style={{ flex: 1, flexDirection: 'row' }}>
+                <Text style={[styles.buttonTextStyle, buttonTextStyle]}>
+                    {buttonText}
                 </Text>
+                {loading &&
+                    <ActivityIndicator
+                        animating={loading}
+                        size={size ? size : 'small'}
+                        color={color ? color : colors.primary}
+                        style={[{ marginLeft: 5 }, style ? style : {}]}
+                    />
+                }
             </View>
             <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
                 <Image

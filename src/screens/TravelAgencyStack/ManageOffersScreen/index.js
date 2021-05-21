@@ -3,7 +3,6 @@ import {
     View,
     Text,
     Image,
-    ImageBackground,
     Alert,
     TouchableOpacity,
     StyleSheet, FlatList,
@@ -11,12 +10,16 @@ import {
 import moment from 'moment'
 
 import Button from '../../../components/Button'
-import icons from '../../../assets/icons'
-import colors from '../../../utils/colors';
+import InputField from '../../../components/InputField'
 import BackGround from '../../../components/HomeBackGround';
 import Header from '../../../components/Header';
-import { API, requestGetWithToken, requestPostWithToken } from '../../../utils/API';
 import Loader from '../../../components/Loader';
+
+import icons from '../../../assets/icons'
+import colors from '../../../utils/colors';
+import { API, requestGetWithToken, requestPostWithToken } from '../../../utils/API';
+
+const inputAccessoryViewID = 'ManageOffersScreen'
 
 export default class ManageOffersScreen extends Component {
     constructor(props) {
@@ -38,7 +41,10 @@ export default class ManageOffersScreen extends Component {
             loading: false,
             mainHeading: "Manage Offers",
             mainText: "Manage and organize your existing offers or create a new one.",
-            offersList: []
+            offersList: [],
+            filteredOffersList: [],
+            showSearchInput: false,
+            searchText: ''
         }
     }
 
@@ -52,7 +58,7 @@ export default class ManageOffersScreen extends Component {
             this.setState({ loading: false })
             if (response.status == 200) {
                 // console.log('getCompanyOffers', 'response.data', response.data)
-                this.setState({ offersList: response.data })
+                this.setState({ offersList: response.data, filteredOffersList: response.data })
             } else {
                 Alert.alert(null, response.message)
             }
@@ -70,12 +76,23 @@ export default class ManageOffersScreen extends Component {
                 activeOpacity={0.6}
                 style={[styles.offerItemStyle, { marginBottom: index + 1 == offersList.length ? 120 : 15 }]}
                 onPress={() => {
-                    if (item.title === 'Group Travel Promo')
-                        navigation.navigate('GroupTravel')
+                    navigation.navigate('OfferRecipientsScreen', { offer: item })
                 }}>
-                <Text style={{ fontSize: 20, color: colors.green, fontWeight: "bold" }}>{item.title}</Text>
-                <View style={{ width: '70%' }}>
-                    <Text style={{ fontSize: 11, color: colors.grey, marginTop: 5 }}>{item.short_description}</Text>
+                <View style={{ width: '100%', flexDirection: 'row' }}>
+                    <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 20, color: colors.green, fontWeight: "bold" }}>{item.title}</Text>
+                        <Text style={{ fontSize: 11, color: colors.grey, marginTop: 5 }}>{item.short_description}</Text>
+                    </View>
+                    <TouchableOpacity
+                        style={{ width: 40, height: 40, marginRight: -10, alignItems: 'center', justifyContent: 'center' }}
+                        onPress={() => {
+                            navigation.navigate('NewOfferScreen', { offer: item, isModeEdit: true, updateOffers: this.getCompanyOffers })
+                        }}>
+                        <Image
+                            style={{ width: 20, height: 20, resizeMode: 'contain', tintColor: colors.grey }}
+                            source={icons.edit}
+                        />
+                    </TouchableOpacity>
                 </View>
                 <View style={[styles.horizontalDivider, { marginTop: 20, marginBottom: 10 }]} />
                 <View style={{ width: '100%', flexDirection: 'row' }}>
@@ -99,12 +116,12 @@ export default class ManageOffersScreen extends Component {
                         }} />
                     </View>
                 </View>
-            </TouchableOpacity>
+            </TouchableOpacity >
         )
     }
 
     render() {
-        const { loading, offersList } = this.state
+        const { loading, showSearchInput, offersList, filteredOffersList, searchText } = this.state
         const { navigation } = this.props
         return (
             <View style={styles.container}>
@@ -115,9 +132,52 @@ export default class ManageOffersScreen extends Component {
                     }}
                     leftIcon={icons.backArrow}
                     leftButtonIconStyle={{ tintColor: colors.white }}
+                    centerComponent={
+                        <View style={{ flex: 1, justifyContent: 'center' }}>
+                            {showSearchInput &&
+                                <InputField
+                                    inputContainer={{ marginTop: 0, paddingRight: 0, height: 40 }}
+                                    fieldRef={ref => this.fieldSearch = ref}
+                                    onParentPress={() => { if (this.fieldSearch) this.fieldSearch.focus() }}
+                                    value={searchText}
+                                    autoCapitalize={'none'}
+                                    placeholder={'Search...'}
+                                    returnKeyType='search'
+                                    onChangeText={(text) => {
+                                        let filteredOffersListTemp = offersList
+                                        if (text !== '') {
+                                            filteredOffersListTemp = filteredOffersListTemp.filter((item) => {
+                                                return (item.title.toLowerCase().indexOf((text + "").toLowerCase()) >= 0)
+                                            })
+                                        }
+                                        this.setState({
+                                            filteredOffersList: filteredOffersListTemp,
+                                            searchText: text
+                                        })
+                                    }}
+                                    rightIcon={icons.search}
+                                    onRightIconPress={() => { }}
+                                    onSubmitEditing={() => { }}
+                                    inputAccessoryViewID={inputAccessoryViewID}
+                                />
+                            }
+                        </View>
+                    }
+                    rightIcon={showSearchInput ? icons.cross : icons.search}
+                    onRightAction={() => {
+                        if (showSearchInput) {
+                            this.setState({ showSearchInput: !showSearchInput, filteredOffersList: offersList, searchText: '' })
+                        } else {
+                            this.setState({ showSearchInput: !showSearchInput }, () => {
+                                if (this.fieldSearch) this.fieldSearch.focus()
+                            })
+                        }
+                    }}
+                    rightButtonContainerStyle={showSearchInput ? styles.searchIconStyle : { padding: 20 }}
+                    rightButtonIconStyle={{ tintColor: colors.white }}
                 />
                 <View style={{ flex: 1 }}>
-                    <View style={{ height: 60, marginBottom: 20 }}>
+                    <View style={{ height: 60, marginBottom: 20, paddingHorizontal: 40 }}>
                         <Text style={styles.hearderText}>{this.state.mainHeading}</Text>
                         <Text style={styles.hearderBelowText}>{this.state.mainText}</Text>
                     </View>
@@ -125,9 +185,9 @@ export default class ManageOffersScreen extends Component {
                         listKey={moment().format('x').toString()}
                         showsVerticalScrollIndicator={false}
                         showsHorizontalScrollIndicator={false}
-                        data={offersList}
+                        data={filteredOffersList}
                         style={{ marginBottom: 0 }}
-                        extraData={offersList}
+                        extraData={filteredOffersList}
                         keyExtractor={(item, index) => index}
                         numColumns={1}
                         renderItem={({ item, index }) => {
@@ -186,13 +246,11 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: 'bold',
         color: colors.white,
-        marginLeft: 40
     },
     hearderBelowText: {
         width: '80%',
         fontSize: 12,
         color: colors.white,
-        marginLeft: 40,
         marginTop: 5,
     },
     shadowElevation: {
@@ -206,5 +264,15 @@ const styles = StyleSheet.create({
 
         elevation: 5,
     },
+    searchIconStyle: {
+        backgroundColor: colors.grey,
+        padding: 5,
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginHorizontal: 20
+    }
 });
 

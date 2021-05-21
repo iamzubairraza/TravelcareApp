@@ -18,4 +18,5 @@ export default {
     lock: require('./lock.png'),
     search: require('./search.png'),
     clockIcon: require('./clock_icon.png'),
+    edit: require('./edit.png'),
 }

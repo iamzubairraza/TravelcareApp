@@ -5,6 +5,7 @@ import {
     Image,
     TouchableOpacity,
     StyleSheet,
+    Alert,
 } from 'react-native';
 import Preference from 'react-native-preference'
 import icons from '../../../assets/icons'
@@ -12,6 +13,7 @@ import colors from '../../../utils/colors';
 import BackGround from '../../../components/HomeBackGround';
 import Header from '../../../components/Header';
 import preferenceKeys from '../../../utils/preferenceKeys';
+import { API, requestGetWithToken } from '../../../utils/API';
 
 export default class HomeScreen extends Component {
     constructor(props) {
@@ -19,13 +21,49 @@ export default class HomeScreen extends Component {
         const currentUser = Preference.get(preferenceKeys.CURRENT_USER)
         this.state = {
             loading: false,
-            acceptedOffers: "07",
+            acceptedOffers: "0",
             currentUser: currentUser
         }
     }
 
     componentDidMount() {
+        // this.getProfile()
+        const { navigation } = this.props
+        this.onFocusListener = navigation.addListener('focus', () => {
+            this.getProfile()
+        });
+    }
 
+    getProfile = () => {
+        const { navigation } = this.props
+        this.setState({ loading: true })
+        requestGetWithToken(API.GET_PROFILE).then((response) => {
+            this.setState({ loading: false })
+            if (response.status == 200) {
+                this.setState({ currentUser: response.data }, () => {
+                    Preference.set(preferenceKeys.CURRENT_USER, response.data)
+                    console.log('getProfile-plan', response.data.plan)
+                    if (response.data?.payment_status == 0) {
+                        Alert.alert(
+                            null, "Complete your subcription!",
+                            [{
+                                text: "OK", onPress: () => {
+                                    navigation.reset({
+                                        index: 0,
+                                        routes: [{ name: "PaymentPlanScreen", params: { isFromHome: true, plan: response.data?.plan } }],
+                                    });
+                                }
+                            }],
+                            { cancelable: false }
+                        )
+                    }
+                })
+            } else {
+                Alert.alert(null, response.message)
+            }
+        }).catch((error) => {
+            this.setState({ loading: false })
+        })
     }
 
     render() {
@@ -39,8 +77,8 @@ export default class HomeScreen extends Component {
                         navigation.toggleDrawer()
                     }}
                     leftIcon={icons.menu}
-                    hearderText={'Yulanda'}
-                    hearderTextStyle={{ width: '80%', textAlign: 'left', color: colors.white }}
+                    hearderText={currentUser?.name}
+                    hearderTextStyle={{ width: '80%', textAlign: 'left', color: colors.white, fontSize: currentUser?.name.length > 20 ? 18 : 22 }}
                 />
                 <View style={styles.containerBoxMain}>
                     <TouchableOpacity
@@ -49,12 +87,14 @@ export default class HomeScreen extends Component {
                         }} style={styles.containerBox}>
                         <View style={{ width: "100%", height: 50, justifyContent: 'center' }}>
                             <Text style={{ fontSize: 12, color: colors.grey }}>{'Accepted Offers'}</Text>
-                            <Text style={{ fontSize: 20, color: colors.green }}>{this.state.acceptedOffers}</Text>
+                            <Text style={{ fontSize: 20, color: colors.green }}>
+                                {currentUser.accepted_offer_count < 10 ? `0${currentUser.accepted_offer_count}` : currentUser.accepted_offer_count}
+                            </Text>
                             <View style={{
                                 width: 20,
                                 height: 20,
                                 position: 'absolute',
-                                right: 20,
+                                right: 0,
                                 top: 15,
                                 backgroundColor: colors.grey,
                                 borderRadius: 10,
@@ -81,7 +121,6 @@ export default class HomeScreen extends Component {
                                 paddingHorizontal: 20
                             }}>{'Travellers accepted your offer'}</Text>
                         </View>
-
                     </TouchableOpacity>
                     <View style={styles.containerBox}>
                         <View style={{ height: 130, width: "100%" }}>
@@ -93,7 +132,7 @@ export default class HomeScreen extends Component {
                                 resizeMode: 'contain'
                             }} />
                             <View style={{ width: "100%", height: '100%', justifyContent: 'center', backgroundColor: "transparent" }}>
-                                <Text style={{ fontSize: 20, color: colors.black, width: '60%', fontWeight: "bold" }}>{'Explore Top Travels'}</Text>
+                                <Text style={{ fontSize: 20, color: colors.black, width: '60%', fontWeight: "bold" }}>{'Explore Top Travelers'}</Text>
                                 <Text style={{ fontSize: 9, width: '60%', color: colors.grey }}>{'Explore top travelers width\n good reputation'}</Text>
                                 <TouchableOpacity onPress={() => {
                                     navigation.navigate('TravelerListScreen', { traveler: "top" })

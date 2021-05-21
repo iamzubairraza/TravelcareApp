@@ -21,6 +21,8 @@ import icons from '../../../assets/icons'
 import colors from '../../../utils/colors';
 import BackGround from '../../../components/HomeBackGround';
 import Header from '../../../components/Header';
+import { API, requestGetWithToken } from '../../../utils/API';
+import Loader from '../../../components/Loader';
 
 
 
@@ -28,160 +30,230 @@ export default class TravelCompanyDetailsScreen extends Component {
     constructor(props) {
         super(props);
 
-        let user = {
-            userImage: require('../../../assets/images/top_traveller.png'),
-            userName: 'Kevin E.Parker',
-            jobTitle: 'Chief of Surgery',
-            jobsDone: '80 jobs done',
+        let company = {
+            offers: []
         }
         const { params } = props.route
 
         if (params) {
-            if (params.user) user = params.user
+            if (params.company) company = { ...params.company }
         }
 
         this.state = {
             loading: false,
-            user: user,
+            company: company,
             anyItemSelected: false,
             displayBottomSheet: false,
-            companyTitle: 'HotelPlanner.com',
             description: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum is simply dummy text of the printing and typesetting industry.\n\n Lorem Ipsum is simply dummy text of the printing and typesetting industry.Lorem Ipsum is simply dummy text of the printing and typesetting industry.',
-            ratting: 4.5,
-            noOfReview: 1631,
-            myJobHistoryList: [
-                {
-                    offerName: 'Group Travel Promo',
-                    desctiption: 'Save up to80% with our group travel promo and it\'s completely free.',
-                    endingDate: moment().add(72, 'hours'),
-                },
-                {
-                    offerName: 'Travel Bundle',
-                    desctiption: 'Save up to80% with our group travel promo and it\'s completely free.',
-                    endingDate: moment().add(48, 'hours'),
-                },
-            ]
+            ratting: 0.00,
+            noOfReview: 0,
         }
     }
 
     componentDidMount() {
+        this.getCompanyDetailsWithOffers()
+    }
 
+    getCompanyDetailsWithOffers = () => {
+        const { company } = this.state
+        this.setState({ loading: true })
+        requestGetWithToken(`${API.GET_TRAVELER_COMPANY_WITH_OFFERS}/${company?.id}`).then((response) => {
+            this.setState({ loading: false })
+            // console.log('getCompanyDetailsWithOffers', 'requestPost-response', response);
+            if (response.status == 200) {
+                this.setState({ company: response.data })
+            } else {
+                Alert.alert(null, response.message)
+            }
+        }).catch((error) => {
+            this.setState({ loading: false })
+            console.log('getCompanyDetailsWithOffers', 'error', error)
+            Alert.alert(null, 'Something went wrong')
+        })
     }
 
     renderCompanyDetails = () => {
-        const { companyTitle, description, ratting, noOfReview } = this.state
-        const { navigation } = this.props
+        const { company } = this.state
         return (
             <View
                 style={[styles.offerItemStyle, { alignItems: 'flex-start', paddingBottom: 20, marginTop: 20 }]}
                 onPress={() => {
 
                 }}>
-                <Text style={{ fontSize: 20, color: colors.black, fontWeight: "bold" }}>{companyTitle}</Text>
+                <Text style={{ fontSize: 20, color: colors.black, fontWeight: "bold" }}>{company?.name}</Text>
                 <Rating
                     readonly={true}
-                    startingValue={ratting}
+                    startingValue={company?.rating}
                     ratingCount={5}
                     imageSize={14}
                     style={{ marginTop: 5 }}
                 />
-                <Text style={{ fontSize: 11, color: colors.black, marginTop: 5 }}>{noOfReview + ' Reviews'}</Text>
-                <Text style={{ fontSize: 11, color: colors.mediumGrey, marginTop: 5 }}>{description}</Text>
+                <Text style={{ fontSize: 11, color: colors.black, marginTop: 5 }}>{company?.reviews_count + ' Reviews'}</Text>
+                <Text style={{ fontSize: 11, color: colors.mediumGrey, marginTop: 5 }}>{company?.description}</Text>
             </View>
         )
     }
 
     renderOfferItem = (item, index) => {
-
-        let expiresIn = moment(moment(item.endingDate).diff(moment()))
-        expiresIn = moment.duration(expiresIn).asHours().toFixed(0)
-
+        const { company } = this.state
         const { navigation } = this.props
+        const expiresIn = moment(item.end_date).endOf('hours').fromNow()
+
         return (
             <TouchableOpacity
                 // disabled={true}
                 activeOpacity={0.6}
                 style={styles.offerItemStyle}
                 onPress={() => {
-                    navigation.navigate('ReceivedOfferDetailsScreen')
+                    navigation.navigate('ReceivedOfferDetailsScreen', { offer: item, companyName: company.name, updateOffers: this.getCompanyDetailsWithOffers })
                 }}>
-                <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 20, color: colors.green, fontWeight: "bold" }}>{item.offerName}</Text>
-                    <Text style={{ fontSize: 11, color: colors.grey, marginVertical: 10 }}>{item.desctiption}</Text>
+                <View style={{ flex: 1, width: '100%' }}>
+                    <Text style={{ fontSize: 20, color: colors.green, fontWeight: "bold" }}>{item.title}</Text>
+                    <Text style={{ fontSize: 11, color: colors.grey, marginVertical: 10 }}>{item.short_description}</Text>
                 </View>
                 <View style={styles.horizontalDivider} />
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-                        <Image
-                            style={{
-                                width: 15,
-                                height: 15,
-                                resizeMode: 'contain',
-                                tintColor: 'red'
-                            }}
-                            source={icons.clockIcon}
-                        />
-                        <Text style={{ fontSize: 11, color: colors.grey, marginLeft: 10 }}>{'Expires in: ' + expiresIn}</Text>
+                <View style={{ width: '100%' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={[{ flex: 1, flexDirection: 'row', alignItems: 'center' }]}>
+                            <View style={[{ width: 15, height: 15, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }, item.status == 1 ? { backgroundColor: colors.green, padding: 2 } : {}]}>
+                                <Image
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        resizeMode: 'contain',
+                                        tintColor: item.status == 1 ? colors.white : colors.red,
+                                    }}
+                                    source={item.status == 1 ? icons.check : icons.clockIcon}
+                                />
+                            </View>
+                            <Text style={{ fontSize: 11, color: colors.grey, marginLeft: 10 }}>{'Expires: ' + expiresIn}</Text>
+                        </View>
+                        <View style={{
+                            width: 20,
+                            height: 20,
+                            backgroundColor: colors.transparentGrey,
+                            borderRadius: 10,
+                            alignItems: "center",
+                            justifyContent: 'center'
+                        }}>
+                            <Image
+                                style={{
+                                    width: 10,
+                                    height: 10,
+                                    resizeMode: 'contain'
+                                }}
+                                source={icons.rightArrow}
+                            />
+                        </View>
                     </View>
-                    <View style={{
-                        width: 20,
-                        height: 20,
-                        backgroundColor: colors.transparentGrey,
-                        borderRadius: 10,
-                        alignItems: "center",
-                        justifyContent: 'center'
-                    }}>
-                        <Image
-                            style={{
-                                width: 10,
-                                height: 10,
-                                resizeMode: 'contain'
-                            }}
-                            source={icons.rightArrow}
-                        />
-                    </View>
+                    {item.status == 1 &&
+                        <View style={{}}>
+                            <View style={{
+                                marginTop: 10,
+                                height: 50,
+                                justifyContent: 'center',
+                                backgroundColor: (colors.yellow + '30'),
+                                borderRadius: 5,
+                                flexDirection: 'row',
+                                alignItems: 'center'
+                            }}>
+                                <View style={{ flex: 1, alignItems: 'center' }}>
+                                    <Text style={{
+                                        fontSize: 12,
+                                        color: colors.yellow,
+                                        paddingHorizontal: 20
+                                    }}>
+                                        {'Congratulations! for finding your favorite offer'}
+                                    </Text>
+                                </View>
+                            </View>
+                            <View style={{ width: '100%', alignItems: 'center', justifyContent: 'center', marginTop: 20, flexDirection: 'row' }}>
+                                {item.isStateChangeToIdle &&
+                                    <View style={[{ width: 15, height: 15, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.green, padding: 2 }]}>
+                                        <Image
+                                            style={{
+                                                width: '100%',
+                                                height: '100%',
+                                                resizeMode: 'contain',
+                                                tintColor: colors.white,
+                                            }}
+                                            source={icons.check}
+                                        />
+                                    </View>
+                                }
+                                <Text style={{
+                                    fontSize: 12,
+                                    color: colors.mediumGrey,
+                                    paddingHorizontal: 20
+                                }}>
+                                    {item.isStateChangeToIdle ?
+                                        'Profile status changed to idle'
+                                        :
+                                        'Change profile status to Idle(Not Looking for more offers)?'
+                                    }
+                                </Text>
+                            </View>
+                            <Button
+                                containerStyle={{ backgroundColor: item.isStateChangeToIdle ? colors.lightBlue : colors.green }}
+                                buttonTextStyle={{ color: item.isStateChangeToIdle ? colors.primary : colors.white }}
+                                buttonText={item.isStateChangeToIdle ? 'Settings' : 'Yes - Change to Idle'}
+                                onPressButton={() => {
+                                    if (item.isStateChangeToIdle == false) {
+                                        let receivedOffersListTemp = this.state.receivedOffersList
+                                        receivedOffersListTemp[index].isStateChangeToIdle = true
+                                        this.setState({ receivedOffersList: receivedOffersListTemp })
+                                    } else {
+                                        navigation.navigate('ProfileSetting', { isModeEdit: true })
+                                    }
+                                }}
+                            />
+                        </View>
+                    }
                 </View>
             </TouchableOpacity>
         )
     }
 
     render() {
-        const { user, myJobHistoryList } = this.state
+        const { loading, company } = this.state
         const { navigation } = this.props
         return (
             <View style={styles.container}>
                 <View style={{ width: '100%', height: 200 }}>
                     <ImageBackground
                         style={{ width: '100%', height: '100%', resizeMode: 'cover' }}
-                        source={images.hotelPlanner}>
+                        source={{ uri: company?.image }}>
                         <Header
                             onLeftAction={() => {
                                 navigation.goBack()
                             }}
                             leftIcon={icons.backArrow}
-                            leftButtonIconStyle={{ tintColor: colors.white }}
+                            leftButtonIconStyle={{ tintColor: colors.black }}
                         />
                     </ImageBackground>
                 </View>
                 {this.renderCompanyDetails()}
-                <View style={{ paddingHorizontal: 15, alignItems: 'center' }}>
-                    <Text style={{ marginVertical: 20, color: colors.mediumGrey }}>{'Offers'}</Text>
-                </View>
+                {company?.offers?.length > 0 &&
+                    <View style={{ paddingHorizontal: 15, alignItems: 'center' }}>
+                        <Text style={{ marginVertical: 20, color: colors.mediumGrey }}>{'Offers'}</Text>
+                    </View>
+                }
                 <View style={{ flex: 1 }}>
                     <FlatList
                         listKey={moment().format('x').toString()}
                         showsVerticalScrollIndicator={false}
                         showsHorizontalScrollIndicator={false}
-                        data={myJobHistoryList}
+                        data={company?.offers}
                         style={{ marginBottom: 0 }}
-                        extraData={myJobHistoryList}
-                        keyExtractor={(item, index) => index}
+                        extraData={company?.offers}
+                        keyExtractor={(item, index) => item.id}
                         numColumns={1}
                         renderItem={({ item, index }) => {
                             return this.renderOfferItem(item, index)
                         }}
                     />
                 </View>
+                <Loader loading={loading} />
             </View>
         )
     }

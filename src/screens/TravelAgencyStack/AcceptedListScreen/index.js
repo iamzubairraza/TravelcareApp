@@ -25,73 +25,7 @@ export default class AcceptedScreen extends Component {
             displayBottomSheet: false,
             mainHeading: "Accepted Offers",
             mainText: "Offers that are accepted by travelers",
-            travelers: [
-                {
-                    offerName: "Offer1",
-                    traveler: [{
-                        userImage: require('../../../assets/images/top_traveller.png'),
-                        userName: 'Kevin E.Parker',
-                        jobTitle: 'CNA',
-                        jobsDone: '80 jobs done',
-                        statusOffer: true,
-                        selected: false
-                    }, {
-                        userImage: require('../../../assets/images/top_traveller.png'),
-                        userName: 'Kevin E.Parker',
-                        jobTitle: 'CNA',
-                        jobsDone: '80 jobs done',
-                        statusOffer: true,
-                        selected: false
-                    }, {
-                        userImage: require('../../../assets/images/top_traveller.png'),
-                        userName: 'Kevin E.Parker',
-                        jobTitle: 'CNA',
-                        jobsDone: '80 jobs done',
-                        statusOffer: true,
-                        selected: false
-                    }, {
-                        userImage: require('../../../assets/images/top_traveller.png'),
-                        userName: 'Kevin E.Parker',
-                        jobTitle: 'CNA',
-                        jobsDone: '80 jobs done',
-                        statusOffer: false,
-                        selected: false
-                    },]
-                },
-                {
-                    offerName: "Offer2",
-                    traveler: [{
-                        userImage: require('../../../assets/images/top_traveller.png'),
-                        userName: 'Kevin E.Parker',
-                        jobTitle: 'CNA',
-                        jobsDone: '80 jobs done',
-                        statusOffer: true,
-                        selected: false
-                    }, {
-                        userImage: require('../../../assets/images/top_traveller.png'),
-                        userName: 'Kevin E.Parker',
-                        jobTitle: 'CNA',
-                        jobsDone: '80 jobs done',
-                        statusOffer: true,
-                        selected: false
-                    }, {
-                        userImage: require('../../../assets/images/top_traveller.png'),
-                        userName: 'Kevin E.Parker',
-                        jobTitle: 'CNA',
-                        jobsDone: '80 jobs done',
-                        statusOffer: true,
-                        selected: false
-                    }, {
-                        userImage: require('../../../assets/images/top_traveller.png'),
-                        userName: 'Kevin E.Parker',
-                        jobTitle: 'CNA',
-                        jobsDone: '80 jobs done',
-                        statusOffer: false,
-                        selected: false
-                    },]
-                }
-
-            ]
+            travelers: []
         }
     }
 
@@ -101,11 +35,11 @@ export default class AcceptedScreen extends Component {
 
     getAcceptedOffers = () => {
         this.setState({ loading: true })
-        requestGetWithToken(API.GET_COMPANY_OFFERS).then((response) => {
+        requestGetWithToken(API.GET_ACCEPTED_OFFERS).then((response) => {
             this.setState({ loading: false })
             if (response.status == 200) {
                 console.log('getAcceptedOffers', 'response.data', response.data)
-                // this.setState({ travelers: response.data })
+                this.setState({ travelers: response.data })
             } else {
                 Alert.alert(null, response.message)
             }
@@ -117,13 +51,14 @@ export default class AcceptedScreen extends Component {
 
     tarvelerBox = (item, index) => {
         const { navigation } = this.props
+        if (index == 0) console.log('item', item)
         return (
             <View style={styles.containerBox}>
                 <TouchableOpacity
                     activeOpacity={0.6}
                     style={{ height: 80, width: "100%" }}
                     onPress={() => {
-                        navigation.navigate('OfferAcceptorDetailScreen')
+                        navigation.navigate('OfferAcceptorDetailScreen', { traveler: item })
                     }}>
                     <View style={{
                         flexDirection: 'row',
@@ -131,19 +66,22 @@ export default class AcceptedScreen extends Component {
                     }}>
                         <View style={{
                             width: 80,
-                            borderColor: item.statusOffer ? colors.green : colors.yellow,
+                            borderColor: item.profile_status == 1 ? colors.green : item.profile_status == 2 ? colors.yellow : colors.red,
                             height: 80,
                             alignItems: 'center',
                             justifyContent: 'center',
                             borderRadius: 40,
                             borderWidth: 1
                         }}>
-                            <Image source={item.userImage} style={{
-                                width: 70,
-                                height: 70,
-                                resizeMode: 'cover',
-                                borderRadius: 35
-                            }} />
+                            <Image
+                                source={{ uri: item.image }}
+                                style={{
+                                    width: 70,
+                                    height: 70,
+                                    resizeMode: 'cover',
+                                    borderRadius: 35
+                                }}
+                            />
                         </View>
                         <View style={{
                             width: "70%",
@@ -157,17 +95,24 @@ export default class AcceptedScreen extends Component {
                                 color: colors.black,
                                 width: '100%',
                                 fontWeight: "bold"
-                            }}>{item.userName}</Text>
+                            }}>{item.name}</Text>
                             <Text style={{
                                 fontSize: 11,
                                 width: '40%',
-                                color: colors.primary
-                            }}>{item.jobTitle}</Text>
+                                color: colors.primary,
+                                marginVertical: 5,
+                            }}>
+                                {
+                                    Array.isArray(item?.services) ?
+                                        item?.services[0]?.name :
+                                        item.service
+                                }
+                            </Text>
                             <Text style={{
                                 fontSize: 11,
                                 width: '40%',
                                 color: colors.grey
-                            }}>{item.jobsDone}</Text>
+                            }}>{item.jobs + " jobs done"}</Text>
                         </View>
                         <View style={{
                             width: 20,
@@ -194,16 +139,17 @@ export default class AcceptedScreen extends Component {
     }
 
     maintarvelerBox = (item, index) => {
+        if (item?.accepted_users?.length > 0 == false) return null
         return (
             <View style={{ width: '100%', alignItems: 'center', marginBottom: index + 1 == this.state.travelers.length ? 120 : 20 }}>
                 <View style={{ width: '80%', height: 15, flexDirection: "row" }}>
-                    <Text style={{ width: '50%', color: colors.black, fontSize: 14 }}>{item.offerName}</Text>
+                    <Text style={{ width: '50%', color: colors.black, fontSize: 14 }}>{item.title}</Text>
                     <View style={{ width: "50%", alignItems: "flex-end" }}>
                         <View style={{ width: "100%", flexDirection: "row", }}>
                             <View style={{ width: 15, height: 15, backgroundColor: colors.green, borderRadius: 8, alignItems: "center", justifyContent: "center" }}>
                                 <Image source={icons.check_white} style={{ width: 10, height: 10, borderRadius: 10, tintColor: colors.white }} />
                             </View>
-                            <Text style={{ fontSize: 14, color: colors.green, marginStart: 5 }}>{item.traveler?.length + " Traveler selected"}</Text>
+                            <Text style={{ fontSize: 14, color: colors.green, marginStart: 5 }}>{item.accepted_users?.length + " Traveler selected"}</Text>
                         </View>
                     </View>
                 </View>
@@ -211,14 +157,15 @@ export default class AcceptedScreen extends Component {
                     listKey={moment().format('x').toString()}
                     showsVerticalScrollIndicator={false}
                     showsHorizontalScrollIndicator={false}
-                    data={item.traveler}
+                    data={item.accepted_users}
                     style={{ marginBottom: 10 }}
                     extraData={this.state}
                     keyExtractor={(item, index) => index}
                     numColumns={1}
                     renderItem={({ item, index }) => this.tarvelerBox(item, index)}
                 />
-            </View>);
+            </View>
+        );
     }
 
     render() {
@@ -235,7 +182,7 @@ export default class AcceptedScreen extends Component {
                     leftButtonIconStyle={{ tintColor: colors.white }}
                 />
                 <View style={styles.containerBoxMain}>
-                    <View style={{ height: 60 }}>
+                    <View style={{ minHeight: 60, paddingHorizontal: 40 }}>
                         <Text style={styles.hearderText}>{this.state.mainHeading}</Text>
                         <Text style={styles.hearderBelowText}>{this.state.mainText}</Text>
                     </View>
@@ -320,14 +267,11 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: 'bold',
         color: colors.white,
-        marginLeft: 40
     },
     hearderBelowText: {
         width: '80%',
         fontSize: 12,
         color: colors.white,
-        marginLeft: 40,
         marginTop: 5
     }
 });
-

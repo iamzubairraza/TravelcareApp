@@ -19,50 +19,22 @@ import Header from '../../../components/Header';
 import { API, requestGetWithToken, requestPostWithToken } from '../../../utils/API';
 import Loader from '../../../components/Loader';
 
-const dummyList = [
-    {
-        id: '1',
-        image: "https://travel.crmstock.io/storage/app/TravelerImages/H9j4vHyjXwv9y4EYv8qt61SVwFmdkrgqZgaDMClV.jpeg",
-        name: 'Kevin E.Parker',
-        jobTitle: 'CNA',
-        jobsDone: '80 jobs done',
-        profile_status: '1',
-        selected: false
-    },
-    {
-        id: '1',
-        image: "https://travel.crmstock.io/storage/app/TravelerImages/H9j4vHyjXwv9y4EYv8qt61SVwFmdkrgqZgaDMClV.jpeg",
-        name: 'Kevin E.Parker',
-        jobTitle: 'CNA',
-        jobsDone: '80 jobs done',
-        profile_status: '1',
-        selected: false
-    },
-    {
-        id: '2',
-        image: "https://travel.crmstock.io/storage/app/TravelerImages/H9j4vHyjXwv9y4EYv8qt61SVwFmdkrgqZgaDMClV.jpeg",
-        name: 'Kevin E.Parker',
-        jobTitle: 'CNA',
-        jobsDone: '80 jobs done',
-        profile_status: '3',
-        selected: false
-    },
-    {
-        id: '3',
-        image: "https://travel.crmstock.io/storage/app/TravelerImages/H9j4vHyjXwv9y4EYv8qt61SVwFmdkrgqZgaDMClV.jpeg",
-        name: 'Kevin E.Parker',
-        jobTitle: 'CNA',
-        jobsDone: '80 jobs done',
-        profile_status: '2',
-        selected: false
-    }
-]
-
 export default class TravelerListScreen extends Component {
     constructor(props) {
         super(props);
+
+        const { params } = props.route
+        let isFromOffer = false
+        let offerId = -1
+        if (params) {
+            if (params.isFromOffer) isFromOffer = params.isFromOffer
+            if (params.offerId) offerId = params.offerId
+        }
+
         this.state = {
             loading: false,
+            isFromOffer: isFromOffer,
+            offerId: offerId,
             anyItemSelected: false,
             displayBottomSheet: false,
             mainHeading: "All Travelers",
@@ -76,24 +48,42 @@ export default class TravelerListScreen extends Component {
         const { params } = this.props.route;
         this.getCompanyOffers()
         if (params?.traveler === "top") {
-            this.getTravelers(true)
             this.setState({ mainHeading: "Top Travelers", mainText: "Explore for travelers that are ready in accepting offers, travel soon and more" })
+            this.getTravelers(true)
         } else {
-            this.getTravelers(false)
             this.setState({ mainHeading: "All Travelers", mainText: "Explore for travelers that are ready in accepting offers, travel soon and more" })
+            if (this.state.isFromOffer) {
+                this.getOtherTravelers()
+            } else {
+                this.getTravelers(false)
+            }
         }
     }
 
     getTravelers = (onlyTopTravelers) => {
-        let URL = onlyTopTravelers ? API.GET_TRAVELERS : API.GET_TRAVELERS
+        let URL = onlyTopTravelers ? API.GET_TOP_TRAVELERS : API.GET_TRAVELERS
         this.setState({ loading: true })
         requestGetWithToken(URL).then((response) => {
             this.setState({ loading: false })
             if (response.status == 200) {
-                // console.log('getTravelers', 'travelers', response.data)
                 this.setState({ travelers: response.data })
-                //data missing {1. how many jobs done, 2. Current job of traveler} in API, so dummy data is assigned
-                // this.setState({ travelers: dummyList })
+            } else {
+                Alert.alert(null, response.message)
+            }
+        }).catch((error) => {
+            this.setState({ loading: false })
+            console.log('getTravelers', 'error', error)
+        })
+    }
+
+    getOtherTravelers = () => {
+        const { offerId } = this.state
+        this.setState({ loading: true })
+        requestGetWithToken(API.GET_OTHER_TRAVELERS + '/' + offerId).then((response) => {
+            this.setState({ loading: false })
+            if (response.status == 200) {
+                console.log('getOtherTravelers', 'response.data', response.data[0])
+                this.setState({ travelers: response.data })
             } else {
                 Alert.alert(null, response.message)
             }
@@ -108,7 +98,7 @@ export default class TravelerListScreen extends Component {
         requestGetWithToken(API.GET_COMPANY_OFFERS).then((response) => {
             this.setState({ loading: false })
             if (response.status == 200) {
-                console.log('getCompanyOffers', 'response.data', response.data)
+                // console.log('getCompanyOffers', 'response.data', response.data)
                 this.setState({ companyOffers: response.data })
             } else {
                 Alert.alert(null, response.message)
@@ -120,6 +110,8 @@ export default class TravelerListScreen extends Component {
     }
 
     sendOffer = (travelers, offer_id) => {
+        const { navigation } = this.props
+        const { isFromOffer } = this.state
         this.setState({ loading: true })
         let formData = new FormData();
         formData.append('offer_id', offer_id)
@@ -134,9 +126,10 @@ export default class TravelerListScreen extends Component {
                 Alert.alert(null, response.message,
                     [{
                         text: 'OK', onPress: () => {
-                            if (this.Bsheet) this.Bsheet.snapTo(1)
+                            navigation.goBack()
                         }
-                    }]
+                    }],
+                    { cancelable: false }
                 )
             } else {
                 Alert.alert(null, response.message)
@@ -194,15 +187,21 @@ export default class TravelerListScreen extends Component {
                                 fontWeight: "bold"
                             }}>{item.name}</Text>
                             <Text style={{
+                                marginVertical: 5,
                                 fontSize: 11,
                                 width: '40%',
                                 color: colors.primary
-                            }}>{item.jobTitle}</Text>
+                            }}>
+                                {Array.isArray(item?.services) ?
+                                    item.services[0]?.name :
+                                    item.service
+                                }
+                            </Text>
                             <Text style={{
                                 fontSize: 11,
                                 width: '40%',
                                 color: colors.grey
-                            }}>{item.jobsDone}</Text>
+                            }}>{item.jobs + " jobs done"}</Text>
                         </View>
                         <View style={{
                             width: 20,
@@ -236,8 +235,6 @@ export default class TravelerListScreen extends Component {
                                 style={[styles.checkbox, { backgroundColor: item.selected ? colors.green : colors.mediumGrey }]}
                                 onPress={() => {
                                     let dummyTravelers = this.state.travelers;
-                                    console.log("TravelerData: ", JSON.stringify(dummyTravelers))
-                                    console.log("TravelerData: ", JSON.stringify(dummyTravelers[index]))
                                     dummyTravelers[index].selected = !dummyTravelers[index].selected;
                                     this.checkAnyItemSelected(dummyTravelers);
                                     this.setState({ travelers: dummyTravelers })
@@ -269,6 +266,12 @@ export default class TravelerListScreen extends Component {
     renderContent = () => {
         const { navigation } = this.props
         const { companyOffers, travelers } = this.state
+        let selectedCount = 0
+        travelers.map((item, index) => {
+            if (item.selected) {
+                selectedCount++
+            }
+        })
         return (
             <View style={{
                 backgroundColor: colors.lightWhite,
@@ -296,7 +299,7 @@ export default class TravelerListScreen extends Component {
                         <Image source={icons.check_white} style={{ width: 10, height: 10, borderRadius: 10, tintColor: colors.white }} />
 
                     </View>
-                    <Text style={{ fontSize: 12, color: colors.green, marginStart: 10 }}>Swipe down to close</Text>
+                    <Text style={{ fontSize: 12, color: colors.green, marginStart: 10 }}>{`${selectedCount} Travelers selected`}</Text>
                 </View>
                 <View style={{ flex: 1, width: "100%" }}>
                     <Text style={{ fontSize: 16, color: colors.black, fontWeight: "bold", marginTop: 10 }}>Choose offer to send</Text>
@@ -306,15 +309,15 @@ export default class TravelerListScreen extends Component {
                             showsVerticalScrollIndicator={false}
                             showsHorizontalScrollIndicator={false}
                             data={companyOffers}
-                            style={{}}
+                            style={{ width: "90%", }}
                             extraData={this.state}
-                            keyExtractor={(item, index) => index}
+                            keyExtractor={(item, index) => ("companyOffers" + index)}
                             numColumns={1}
                             renderItem={({ item, index }) => {
                                 return (
-                                    <View style={{ width: "90%", height: 80, backgroundColor: colors.Grey, borderRadius: 10, marginTop: 20, padding: 20 }}>
-                                        <Text style={{ fontSize: 15, color: colors.black, width: '60%', fontWeight: "bold" }}>{item.title}</Text>
-                                        <Text style={{ fontSize: 9, width: '60%', color: colors.grey }}>{'Save upto 80% with our group travel promo and its completely free'}</Text>
+                                    <View style={{ width: "100%", height: 80, backgroundColor: colors.Grey, borderRadius: 10, marginTop: 20, padding: 20 }}>
+                                        <Text style={{ fontSize: 15, color: colors.primary, width: '60%', fontWeight: "bold" }}>{item.title}</Text>
+                                        <Text style={{ fontSize: 11, width: '60%', color: colors.grey, marginTop: 5 }}>{item.short_description}</Text>
                                         <TouchableOpacity
                                             activeOpacity={0.6}
                                             style={{ position: "absolute", right: 20, top: 7, width: 70, backgroundColor: colors.white, borderRadius: 20, height: 30, alignItems: "center", justifyContent: 'center', marginTop: 20 }}
@@ -335,7 +338,7 @@ export default class TravelerListScreen extends Component {
                             onPressButton={() => {
                                 this.Bsheet.snapTo(1)
                                 setTimeout(() => {
-                                    navigation.navigate('NewOfferScreen')
+                                    navigation.navigate('NewOfferScreen', { updateOffers: this.getCompanyOffers })
                                 }, 200);
                             }}
                         />
@@ -346,7 +349,7 @@ export default class TravelerListScreen extends Component {
     }
 
     render() {
-        const { displayBottomSheet, loading, travelers } = this.state
+        const { displayBottomSheet, loading, travelers, isFromOffer, offerId } = this.state
         const { navigation } = this.props
         return (
             <View style={styles.container}>
@@ -359,9 +362,10 @@ export default class TravelerListScreen extends Component {
                     leftButtonIconStyle={{ tintColor: colors.white }}
                 />
                 <View style={styles.containerBoxMain}>
-                    <Text style={styles.hearderText}>{this.state.mainHeading}</Text>
-                    <Text
-                        style={styles.hearderBelowText}>{this.state.mainText}</Text>
+                    <View style={{ minHeight: 60, paddingHorizontal: 30 }}>
+                        <Text style={styles.hearderText}>{this.state.mainHeading}</Text>
+                        <Text style={styles.hearderBelowText}>{this.state.mainText}</Text>
+                    </View>
                     <FlatList
                         listKey={moment().format('x').toString()}
                         showsVerticalScrollIndicator={false}
@@ -369,7 +373,7 @@ export default class TravelerListScreen extends Component {
                         data={travelers}
                         style={{}}
                         extraData={this.state}
-                        keyExtractor={(item, index) => index}
+                        keyExtractor={(item, index) => ("travelers" + index)}
                         numColumns={1}
                         renderItem={({ item, index }) => {
                             return (
@@ -387,12 +391,15 @@ export default class TravelerListScreen extends Component {
                             buttonTextStyle={{ color: colors.white }}
                             buttonText={'Send Offer'}
                             onPressButton={() => {
-                                this.setState({ displayBottomSheet: true }, () => {
-                                    this.Bsheet.snapTo(0)
-                                })
+                                if (isFromOffer) {
+                                    this.sendOffer(travelers, offerId)
+                                } else {
+                                    this.setState({ displayBottomSheet: true }, () => {
+                                        this.Bsheet.snapTo(0)
+                                    })
+                                }
                             }}
                         />
-
                     </View>}
 
                 {displayBottomSheet &&
@@ -476,13 +483,11 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: 'bold',
         color: colors.white,
-        marginLeft: 40
     },
     hearderBelowText: {
         width: '80%',
         fontSize: 12,
         color: colors.white,
-        marginLeft: 40,
         marginVertical: 5
     }
 });

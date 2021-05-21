@@ -10,7 +10,8 @@ import {
     StatusBar,
     StyleSheet,
     Keyboard,
-    SafeAreaView
+    SafeAreaView,
+    Platform
 } from 'react-native';
 
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
@@ -43,6 +44,9 @@ import {
     ACTIVE,
     THINKING,
     IDLE,
+    ACTIVE_TEXT,
+    THINKING_TEXT,
+    IDLE_TEXT,
 } from '../../../utils/constants'
 
 const { height } = Dimensions.get('screen');
@@ -53,12 +57,12 @@ const REGEX_NAME = /\b([A-ZÀ-ÿ][-,a-z. ']+[ ]*)+/gm
 
 const imagePickerOptions = {
     cropping: false,
-    width: 750,
-    height: 750,
+    width: 450,
+    height: 450,
     mediaType: 'photo',
     includeBase64: false,
     // cropperCircleOverlay: true,
-    compressImageQuality: 1.0,
+    compressImageQuality: 0.2,
 };
 const inputAccessoryViewID = 'SignUpScreen'
 
@@ -70,30 +74,39 @@ export default class SignUpScreen extends Component {
         const currentUser = Preference.get(preferenceKeys.CURRENT_USER)
         let userId = -1
         let email = ''
-        let name = 'Ali Rehman'
+        let name = ''
+        let description = ''
         let userType = TRAVELER
+        let profileStatus = ACTIVE
         let isModeEdit = false
-        let phoneNumber = '12345678'
+        let phoneNumber = ''
         let profileImage = ''
-        let password = '123456'
-        let selectedCountryCode = { callingCode: ["1"], flag: "flag-us", name: { common: "United States" } }
+        let password = ''
+        let plan = ''
+        let selectedCountryCode = { callingCode: ["1"], countryCode: "US", flag: "flag-us", name: { common: "United States" } }
         if (params) {
             if (params.email) email = params.email
             if (params.userType) userType = params.userType
             if (params.isModeEdit) {
                 isModeEdit = params.isModeEdit
-                password = '1234567890'
+                password = '123456789'
                 if (currentUser) {
-                    const { id, country_code, phone, image } = currentUser
+                    const { id, country_code, phone, image, country_name, profile_status } = currentUser
                     if (id) userId = id
                     if (currentUser.name) name = currentUser.name
+                    if (currentUser.description) description = currentUser.description
                     if (currentUser.email) email = currentUser.email
                     if (phone) phoneNumber = phone
                     if (image) profileImage = image
+                    if (currentUser.plan) plan = currentUser.plan
                     if (country_code) {
                         let callingCode = country_code.replace('+', '')
-                        selectedCountryCode = listOfContries.find((item) => item.callingCode[0] == callingCode)
+                        const foundedItem = listOfContries.find((item) => item.callingCode[0] == callingCode && item.countryCode == country_name)
+                        if (foundedItem) {
+                            selectedCountryCode = foundedItem
+                        }
                     }
+                    if (profile_status) profileStatus = profile_status
                 }
             }
         }
@@ -106,26 +119,21 @@ export default class SignUpScreen extends Component {
             userType: userType,
             isModeEdit: isModeEdit,
             email: email,
-            profileStatus: ACTIVE,
+            profileStatus: profileStatus,
             name: name,
+            description: description,
             selectedCountryCode: selectedCountryCode,
             phoneNumber: phoneNumber,
             typesOfOrganizations: [],
             selectedTypeOfOrganization: '',
             previousSelectedIndex: 0,
-            services: [
-                { id: 2, name: 'Doctor' },
-                { id: 'aldskjf', name: 'Eye spacialist' },
-                { id: 2, name: 'Doctor' },
-                { id: 'aldskjf', name: 'Eye spacialist' },
-                { id: 2, name: 'Doctor' },
-                { id: 'aldskjf', name: 'Eye spacialist' },
-            ],
-            profileImage: profileImage,
+            services: [],
             selectedServices: [],
+            profileImage: profileImage,
             password: password,
+            plan: plan,
             isHiddenPassword: true,
-            confirmPassword: '123456',
+            confirmPassword: '',
             isHiddenConfirmPassword: true,
             rememberPassword: true,
             isOpenCountrySelector: false,
@@ -138,14 +146,33 @@ export default class SignUpScreen extends Component {
             confirmNewPassword: '',
             isHiddenConfirmNewPassword: true,
             showSuccessModal: false,
+            keyboardHeight: 0,
+            loadingOnPlan: false
         }
     }
 
     componentDidMount() {
-        if (this.state.userType == TRAVELER)
+        this.keyboardOpenListener = Keyboard.addListener("keyboardDidShow", (payload) => {
+            let keyboardHeight = Platform.OS === 'android' ? payload.endCoordinates.height : 0
+            this.setState({ keyboardHeight })
+            if (this.dropDownPickerRef) {
+                console.log('componentDidMount', 'keyboardOpenListener-isPickerOpen', this.dropDownPickerRef.isOpen())
+                // this.dropDownPickerRef.close()
+            }
+        })
+        this.keyboardHideListener = Keyboard.addListener("keyboardDidHide", (payload) => {
+            this.setState({ keyboardHeight: 0 })
+        })
+        if (this.state.userType == TRAVELER) {
             this.getServices()
-        else
+        } else {
             this.getOrganizations()
+        }
+    }
+
+    componentWillUnmount() {
+        if (this.keyboardOpenListener) this.keyboardOpenListener.remove()
+        if (this.keyboardHideListener) this.keyboardHideListener.remove()
     }
 
     getServices = () => {
@@ -155,27 +182,23 @@ export default class SignUpScreen extends Component {
                 this.setState({ loading: false })
                 if (response.data) {
                     this.setState({ services: response.data }, () => {
-                        // const { isModeEdit, services } = this.state
-                        // if (isModeEdit) {
-                        //     const currentUser = Preference.get(preferenceKeys.CURRENT_USER)
-                        //     const { service } = currentUser
-                        //     let servicesTemp = services
-                        //     let selectedTypeOfOrganization = ''
-                        //     let previousSelectedIndex = 0
-                        //     typesOfOrganizations.map((item, index) => {
-                        //         if (item.id == organization) {
-                        //             selectedTypeOfOrganization = {
-                        //                 ...item,
-                        //                 isChecked: true
-                        //             }
-                        //             previousSelectedIndex = index
-                        //         }
-                        //     })
-                        //     if (selectedTypeOfOrganization) {
-                        //         typesOfOrganizationsTemp[previousSelectedIndex].isChecked = true
-                        //         this.setState({ selectedTypeOfOrganization, previousSelectedIndex, typesOfOrganizations: typesOfOrganizationsTemp })
-                        //     }
-                        // }
+                        const { isModeEdit, services } = this.state
+                        if (isModeEdit) {
+                            const currentUser = Preference.get(preferenceKeys.CURRENT_USER)
+                            const { service } = currentUser
+                            const serviceTemp = JSON.parse(service)
+                            let selectedServices = []
+                            let updatedServices = services
+                            services.map((item, index) => {
+                                serviceTemp.map((subItem) => {
+                                    if (item.id == subItem) {
+                                        selectedServices.push({ ...item, isChecked: true })
+                                        updatedServices[index].isChecked = true
+                                    }
+                                })
+                            })
+                            this.setState({ selectedServices, services: updatedServices })
+                        }
                     })
                 }
             } else {
@@ -231,6 +254,7 @@ export default class SignUpScreen extends Component {
             userType,
             profileImage,
             name,
+            description,
             selectedCountryCode,
             phoneNumber,
             selectedServices,
@@ -239,6 +263,7 @@ export default class SignUpScreen extends Component {
             password,
             confirmPassword,
             isModeEdit,
+            plan
         } = this.state
 
         if (profileImage === '') {
@@ -247,48 +272,56 @@ export default class SignUpScreen extends Component {
         } else if (name === '') {
             alert('Name is required')
             return false
+        } else if (userType == COMPANY && description === '') {
+            alert('Description is required')
+            return false
         } else if (phoneNumber === '') {
             alert('Phone number is required')
             return false
         } else if (!REGEX_PHONE.test('+' + selectedCountryCode.callingCode[0] + phoneNumber)) {
             alert('Invalid phone format')
             return false
-            // } else if (userType === TRAVELER && selectedServices.length === 0) {
-            //     alert('Select at least on service')
-            //     return false
+        } else if (userType === TRAVELER && selectedServices.length === 0) {
+            alert('Select at least on service')
+            return false
         } else if (userType === COMPANY && selectedTypeOfOrganization.length === '') {
             alert('Select your organization type')
             return false
-        } else if (email === '') {
+        } else if (!isModeEdit && email === '') {
             alert('Email is required')
             return false
-        } else if (REGEX_EMAIL.test(email.trim()) === false) {
+        } else if (!isModeEdit && REGEX_EMAIL.test(email.trim()) === false) {
             alert('Email not valid')
             return false
-        } else if (password === '') {
+        } else if (!isModeEdit && password === '') {
             alert('Password is required')
             return false
         } else if (!isModeEdit && password !== confirmPassword) {
             alert('Confirm password not matched with new password.')
+            return false
+        } else if (userType === COMPANY && plan == 'confirmPassword') {
+            alert('Select you payment plan')
             return false
         }
 
         return true
     }
 
-    onCreateAccoutPress = () => {
+    onCreateAccoutPress = (isPlanPress) => {
         const { navigation } = this.props
         const {
             userType,
             profileImage,
             profileStatus,
             name,
+            description,
             selectedCountryCode,
             phoneNumber,
             selectedServices,
             selectedTypeOfOrganization,
             email,
             password,
+            isModeEdit
         } = this.state
 
         if (this.verifyFields()) {
@@ -298,61 +331,72 @@ export default class SignUpScreen extends Component {
             let formData = new FormData();
             if (typeof profileImage != 'string') formData.append('image', profileImage)
             formData.append('country_code', selectedCountryCode.callingCode[0])
+            formData.append('country_name', selectedCountryCode.countryCode)
             formData.append('phone', phoneNumber)
             formData.append('email', email)
             formData.append('password', password)
-            formData.append('country_status', 'ali')
             if (userType == COMPANY) {
                 URL = API.COMPANY_SIGN_UP
                 navigateTo = 'TravelAgencyStack'
                 formData.append('company_name', name)
                 formData.append('type_of_organization', selectedTypeOfOrganization.id)
-                formData.append('plan', '1')
+                // formData.append('plan', '1')
             }
             else {
                 URL = API.TRAVELER_SIGN_UP
                 navigateTo = 'TravelerStack'
                 formData.append('full_name', name)
+                formData.append('description', description)
                 formData.append('profile_status', profileStatus)
-                formData.append('service', selectedServices)
+                selectedServices.map((item) => {
+                    formData.append('service[]', item.id)
+                })
             }
-            this.setState({ loadingOnCreateAccount: true, percentCompleted: 0 })
+            console.log('onCreateAccoutPress', 'formData', formData)
+            this.setState({ loadingOnCreateAccount: isPlanPress == false, loadingOnPlan: isPlanPress, percentCompleted: 0 })
             requestPost(URL, formData, {}, { onUploadProgress: this.onUploadProgress }).then((response) => {
-                this.setState({ loadingOnCreateAccount: false })
-                console.log('response', response)
+                this.setState({ loadingOnCreateAccount: false, loadingOnPlan: false })
+                console.log('onCreateAccoutPress', 'response.status', response)
                 if (response.status == 200) {
                     const { data, token } = response
-                    Preference.set(preferenceKeys.HAS_SESSION, true)
                     Preference.set(preferenceKeys.USER_TYPE, userType)
                     Preference.set(preferenceKeys.CURRENT_USER, data)
                     Preference.set(preferenceKeys.AUTH_TOKEN, `Bearer ${token}`)
-                    navigation.reset({
-                        index: 0,
-                        routes: [{ name: navigateTo }],
-                    });
+                    if (userType == COMPANY && isPlanPress) {
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: "PaymentPlanScreen" }],
+                        });
+                    } else {
+                        Preference.set(preferenceKeys.HAS_SESSION, true)
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: navigateTo }],
+                        });
+                    }
                 } else {
                     Alert.alert(null, response.message)
                 }
-            }).catch(() => {
-                this.setState({ loadingOnCreateAccount: false })
+            }).catch((error) => {
+                this.setState({ loadingOnCreateAccount: false, loadingOnPlan: false })
+                console.log('onCreateAccoutPress', 'error', error)
                 Alert.alert(null, 'Something went wrong')
             })
         }
     }
 
     onSavePress = () => {
-        const { navigation } = this.props
+        const { navigation, route } = this.props
         const {
             userType,
             profileImage,
             profileStatus,
             name,
+            description,
             selectedCountryCode,
             phoneNumber,
             selectedServices,
             selectedTypeOfOrganization,
-            email,
-            password,
         } = this.state
 
         if (this.verifyFields()) {
@@ -361,36 +405,46 @@ export default class SignUpScreen extends Component {
             let formData = new FormData();
             if (typeof profileImage != 'string') formData.append('image', profileImage)
             formData.append('country_code', selectedCountryCode.callingCode[0])
+            formData.append('country_name', selectedCountryCode.countryCode)
             formData.append('phone', phoneNumber)
-            formData.append('email', email)
-            formData.append('password', password)
             if (userType == COMPANY) {
                 URL = API.UPDATE_COMPANY_PROFILE
-                navigateTo = 'TravelAgencyStack'
                 formData.append('company_name', name)
+                formData.append('description', description)
                 formData.append('type_of_organization', selectedTypeOfOrganization.id)
             }
             else {
                 URL = API.UPDATE_TRAVELER_PROFILE
-                navigateTo = 'TravelerStack'
                 formData.append('full_name', name)
                 formData.append('profile_status', profileStatus)
-                formData.append('service', selectedServices)
+                selectedServices.map((item) => {
+                    formData.append('service[]', item.id)
+                })
             }
             this.setState({ loadingOnCreateAccount: true, percentCompleted: 0 })
             requestPostWithToken(URL, formData, {}, { onUploadProgress: this.onUploadProgress }).then((response) => {
                 this.setState({ loadingOnCreateAccount: false })
-                console.log('response', response)
+                console.log('onSavePress', 'response.status', response.status)
                 if (response.status == 200) {
                     const { data, message } = response
                     Preference.set(preferenceKeys.CURRENT_USER, data)
-                    Alert.alert(null, message)
-                    // navigation.goBack()
+                    Alert.alert(null, message, [
+                        {
+                            text: "OK", onPress: () => {
+                                navigation.goBack()
+                                const { params } = route
+                                if (params && params?.onBackPress && typeof params.onBackPress == 'function') {
+                                    params.onBackPress()
+                                }
+                            }
+                        }
+                    ])
                 } else {
                     Alert.alert(null, message)
                 }
-            }).catch(() => {
+            }).catch((error) => {
                 this.setState({ loadingOnCreateAccount: false })
+                console.log('onSavePress', 'error', error)
                 Alert.alert(null, 'Something went wrong')
             })
         }
@@ -432,13 +486,14 @@ export default class SignUpScreen extends Component {
             formData.append('new_password', newPassword)
             this.setState({ loadingOnSetNewPassword: true })
             requestPostWithToken(API.CHANGE_PASSWORD, formData).then((response) => {
+                this.setState({ loadingOnSetNewPassword: false })
                 if (response.status == 200) {
-                    this.setState({ loadingOnSetNewPassword: false, showPasswordChangeModal: false, oldPassword: '', newPassword: '', confirmNewPassword: '', showSuccessModal: true }, () => {
+                    this.setState({ showPasswordChangeModal: false, oldPassword: '', newPassword: '', confirmNewPassword: '', showSuccessModal: true }, () => {
                         setTimeout(() => {
                             this.setState({ showSuccessModal: false }, () => {
 
                             })
-                        }, 100);
+                        }, 2000);
                     })
                 } else {
                     Alert.alert(null, response.message)
@@ -671,10 +726,16 @@ export default class SignUpScreen extends Component {
         return (
             <CountryCodePicker
                 navigation={this.props.navigation}
+                bottomSheetIndex={this.state.isOpenCountrySelector ? 0 : 1}
                 onSelectCountryCode={(_selectedCountryCode) => {
                     this.setState({ selectedCountryCode: _selectedCountryCode }, () => {
                         this.Bsheet.snapTo(1)
                     })
+                }}
+                onTopEnd={() => {
+                    if (Platform.OS == 'android') {
+                        this.Bsheet.snapTo(1)
+                    }
                 }}
             />
         )
@@ -689,6 +750,8 @@ export default class SignUpScreen extends Component {
             isModeEdit,
             profileStatus,
             name,
+            plan,
+            description,
             selectedCountryCode,
             phoneNumber,
             typesOfOrganizations,
@@ -702,21 +765,22 @@ export default class SignUpScreen extends Component {
             isHiddenConfirmPassword,
             profileImage,
             isOpenCountrySelector,
-            percentCompleted
+            percentCompleted,
+            keyboardHeight,
+            loadingOnPlan
         } = this.state
         const { navigation } = this.props
 
         let profileStatusColor = colors.green
-        let profileStatusText = 'Actively looking for travel offers'
+        let profileStatusText = ACTIVE_TEXT
 
         if (profileStatus == THINKING) {
             profileStatusColor = colors.yellow
-            profileStatusText = 'Timely looking for travel offers'
+            profileStatusText = THINKING_TEXT
         } else if (profileStatus == IDLE) {
             profileStatusColor = colors.red
-            profileStatusText = 'Restricted for travel offers'
+            profileStatusText = IDLE_TEXT
         }
-
         return (
             <View style={styles.container}>
                 <Header
@@ -734,8 +798,8 @@ export default class SignUpScreen extends Component {
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ flexGrow: 1 }}
                     extraHeight={160}
-                    style={{ flexGrow: 1, width: '100%', paddingHorizontal: 30, paddingTop: 20, paddingBottom: 50 }}>
-                    <View style={{ flex: 1 }}>
+                    style={{ flexGrow: 1, width: '100%', paddingHorizontal: 15, paddingTop: 20, paddingBottom: 50 }}>
+                    <View style={{ flex: 1, overflow: 'visible', marginHorizontal: 15, zIndex: 2 }}>
                         <View style={styles.profileImageContainerStyle}>
                             <Image
                                 style={{ width: 134, height: 134, borderRadius: 67, resizeMode: 'cover' }}
@@ -817,10 +881,28 @@ export default class SignUpScreen extends Component {
                                 this.setState({ name: text })
                             }}
                             onSubmitEditing={() => {
-                                this.fieldPhoneNumber.focus()
+                                if (userType == COMPANY) this.fieldDescription.focus()
+                                else this.fieldPhoneNumber.focus()
                             }}
                             inputAccessoryViewID={inputAccessoryViewID}
                         />
+                        {userType == COMPANY &&
+                            <InputField
+                                fieldRef={ref => this.fieldDescription = ref}
+                                onParentPress={() => { if (this.fieldDescription) this.fieldDescription.focus() }}
+                                inputContainer={{ height: 'auto', minHeight: 55, maxHeight: 150, paddingVertical: 10 }}
+                                value={description}
+                                placeholder={'Description'}
+                                multiline={true}
+                                onChangeText={(text) => {
+                                    this.setState({ description: text })
+                                }}
+                                onSubmitEditing={() => {
+                                    // this.fieldPhoneNumber.focus()
+                                }}
+                                inputAccessoryViewID={inputAccessoryViewID}
+                            />
+                        }
                         <View style={{ flexDirection: 'row' }}>
                             <TouchableOpacity
                                 activeOpacity={0.8}
@@ -862,17 +944,19 @@ export default class SignUpScreen extends Component {
 
                         {userType === TRAVELER ?
                             <DropDownPicker
+                                ref={ref => this.dropDownPickerRef = ref}
+                                onOpen={() => { Keyboard.dismiss() }}
                                 items={services}
                                 selectedItem={selectedServices}
                                 dropDownMaxHeight={200}
                                 showArrow={true}
                                 multiple={true}
-                                containerStyle={[styles.countryPickerContainer, { paddingHorizontal: 0 }]}
+                                containerStyle={[styles.countryPickerContainer, { paddingHorizontal: 0, flexDirection: 'column' }]}
                                 style={{ backgroundColor: colors.transparent, borderWidth: 0 }}
                                 placeholder={'Select your service(s)'}
                                 placeholderStyle={{ color: colors.mediumGrey }}
                                 itemStyle={{ justifyContent: 'flex-start' }}
-                                dropDownStyle={{ backgroundColor: '#fafafa' }}
+                                dropDownStyle={[{ backgroundColor: '#fafafa' }, Platform.OS == 'android' ? { position: 'relative', top: 0 } : {}]}
                                 onChangeItem={(item, index) => {
                                     let servicesTemp = services
                                     servicesTemp[index].isChecked = item.isChecked == true ? false : true
@@ -884,17 +968,19 @@ export default class SignUpScreen extends Component {
                             />
                             :
                             <DropDownPicker
+                                ref={ref => this.dropDownPickerRef = ref}
+                                onOpen={() => { Keyboard.dismiss() }}
                                 items={typesOfOrganizations}
                                 selectedItem={selectedTypeOfOrganization}
                                 dropDownMaxHeight={200}
                                 showArrow={true}
                                 multiple={false}
-                                containerStyle={[styles.countryPickerContainer, { paddingHorizontal: 0 }]}
+                                containerStyle={[styles.countryPickerContainer, { paddingHorizontal: 0, flexDirection: 'column' }]}
                                 style={{ backgroundColor: colors.transparent, borderWidth: 0 }}
                                 placeholder={'Type of Organization'}
                                 placeholderStyle={{ color: colors.mediumGrey }}
                                 itemStyle={{ justifyContent: 'flex-start' }}
-                                dropDownStyle={{ backgroundColor: '#fafafa' }}
+                                dropDownStyle={[{ backgroundColor: '#fafafa' }, Platform.OS == 'android' ? { position: 'relative', top: 0 } : {}]}
                                 onChangeItem={(item, index) => {
                                     let typesOfOrganizationsTemp = typesOfOrganizations
                                     typesOfOrganizationsTemp[previousSelectedIndex].isChecked = false
@@ -906,6 +992,7 @@ export default class SignUpScreen extends Component {
                             />
                         }
                         <InputField
+                            editable={!isModeEdit}
                             fieldRef={ref => this.fieldEmail = ref}
                             onParentPress={() => { if (this.fieldEmail) this.fieldEmail.focus() }}
                             value={email}
@@ -974,40 +1061,53 @@ export default class SignUpScreen extends Component {
                         }
                         {userType == COMPANY &&
                             <ButtonWithIcon
-                                containerStyle={{ backgroundColor: colors.lightGrey, paddingHorizontal: 20 }}
+                                activityIndicatorProps={{ loading: loadingOnPlan }}
+                                containerStyle={{ backgroundColor: colors.lightGrey, paddingHorizontal: 20, ...styles.shadowElevation }}
                                 buttonTextStyle={{ color: colors.mediumGrey, fontSize: 14 }}
                                 buttonText={'Plans & Payment'}
                                 onPressButton={() => {
-                                    navigation.navigate('PaymentPlanScreen')
+                                    if (isModeEdit) navigation.navigate("PaymentPlanScreen", { isModeEdit: true, plan })
+                                    else this.onCreateAccoutPress(true)
                                 }}
                             />
                         }
                     </View>
-                    <Button
-                        activityIndicatorProps={{ loading: loadingOnCreateAccount }}
-                        containerStyle={{ backgroundColor: (userType == COMPANY && !isModeEdit) ? colors.primary : colors.green, marginBottom: 70 }}
-                        buttonTextStyle={{ color: colors.white }}
-                        buttonText={isModeEdit ? 'Save' : 'Create Account'}
-                        onPressButton={() => {
-                            if (isModeEdit) {
-                                this.onSavePress()
-                            } else {
-                                this.onCreateAccoutPress()
-                            }
-                        }}
-                    />
+                    <View style={{ marginHorizontal: 15 }}>
+                        <Button
+                            activityIndicatorProps={{ loading: loadingOnCreateAccount }}
+                            containerStyle={{ backgroundColor: (userType == COMPANY && !isModeEdit) ? colors.primary : colors.green, marginBottom: 70 }}
+                            buttonTextStyle={{ color: colors.white }}
+                            buttonText={isModeEdit ? 'Save' : 'Create Account'}
+                            onPressButton={() => {
+                                if (isModeEdit) {
+                                    this.onSavePress()
+                                } else {
+                                    this.onCreateAccoutPress(false)
+                                }
+                            }}
+                        />
+                    </View>
                 </KeyboardAwareScrollView>
                 {this.renderOptionModel()}
                 {this.renderSuccessModal()}
                 {this.renderPasswordChangeModal()}
                 {isOpenCountrySelector &&
-                    <View style={{ flex: 1, backgroundColor: '#00000020', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+                    <View style={{ flex: 1, backgroundColor: '#00000020', position: 'absolute', top: 0, left: 0, right: 0, bottom: -keyboardHeight }}>
                         <BottomSheet
                             ref={(ref) => this.Bsheet = ref}
                             snapPoints={[height * 0.85, 0]}
-                            borderRadius={20}
                             initialSnap={1}
+                            enabledInnerScrolling={true}
+                            enabledContentGestureInteraction={false}
                             renderContent={() => this.renderContent()}
+                            renderHeader={() => {
+                                return (
+                                    <View style={styles.bottomSheetStyle}>
+                                        <View style={{ width: 80, height: 5, alignSelf: 'center', marginTop: 10, marginBottom: 20, backgroundColor: colors.grey }} />
+                                        <Text style={{ fontWeight: '600', fontSize: 16, color: 'black', alignSelf: 'center' }}>{'Select Your Country'}</Text>
+                                    </View>
+                                )
+                            }}
                             onCloseEnd={() => { this.setState({ isOpenCountrySelector: false }) }}
                         />
                     </View>
@@ -1171,5 +1271,37 @@ const styles = StyleSheet.create({
         color: colors.black,
         textAlign: 'center'
     },
+    bottomSheetStyle: {
+        paddingHorizontal: 20,
+        backgroundColor: 'white',
+        borderColor: '#00000022',
+        borderTopWidth: 0.25,
+        borderLeftWidth: 0.25,
+        borderRightWidth: 0.25,
+        borderTopLeftRadius: 25,
+        borderTopRightRadius: 25,
+        // height: '100%',
+        // shadowColor: "#000",
+        // shadowOffset: {
+        //     width: 0,
+        //     height: 12,
+        // },
+        // shadowOpacity: 0.58,
+        // shadowRadius: 16.00,
+
+        // elevation: 24,
+        // marginBottom: 0,
+    },
+    shadowElevation: {
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.10,
+        shadowRadius: 10.84,
+
+        elevation: 5,
+    }
 });
 

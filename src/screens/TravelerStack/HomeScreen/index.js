@@ -21,12 +21,12 @@ import Header from '../../../components/Header';
 import preferenceKeys from '../../../utils/preferenceKeys';
 import { API, requestGetWithToken } from '../../../utils/API';
 import Loader from '../../../components/Loader';
+import { ACTIVE_TEXT, IDLE, IDLE_TEXT, THINKING, THINKING_TEXT, TRAVELER } from '../../../utils/constants';
 
 export default class MyJobsScreen extends Component {
     constructor(props) {
         super(props);
         const currentUser = Preference.get(preferenceKeys.CURRENT_USER)
-        console.log('currentUser', currentUser)
         this.state = {
             loading: false,
             currentUser: currentUser
@@ -35,28 +35,51 @@ export default class MyJobsScreen extends Component {
 
     componentDidMount() {
         this.getProfile()
+        const { navigation } = this.props
+        this.onFocusListener = navigation.addListener('focus', () => {
+            this.getProfile()
+        });
+    }
+
+    componentWillUnmount() {
+        this.onFocusListener = null
     }
 
     getProfile = () => {
-        this.setState({ loading: true })
+        // this.setState({ loading: true })
         requestGetWithToken(API.GET_PROFILE).then((response) => {
             this.setState({ loading: false })
             if (response.status == 200) {
+                // console.log('getProfile', 'response', response)
                 this.setState({ currentUser: response.data }, () => {
-                    Preference.get(preferenceKeys.CURRENT_USER, response.data)
+                    Preference.set(preferenceKeys.CURRENT_USER, response.data)
                 })
             } else {
                 Alert.alert(null, response.message)
             }
         }).catch((error) => {
             this.setState({ loading: false })
-            console.log('getOrganizations', 'error', error)
+            console.log('getProfile', 'error', error)
         })
     }
 
     render() {
         const { currentUser, loading } = this.state
+        const { profile_status } = currentUser
         const { navigation } = this.props
+        let profileStatusColor = colors.green
+        let profileStatusTitleText = 'Active'
+        let profileStatusText = ACTIVE_TEXT
+
+        if (profile_status == THINKING) {
+            profileStatusColor = colors.yellow
+            profileStatusTitleText = 'Thinking'
+            profileStatusText = THINKING_TEXT
+        } else if (profile_status == IDLE) {
+            profileStatusColor = colors.red
+            profileStatusTitleText = 'Idle'
+            profileStatusText = IDLE_TEXT
+        }
         return (
             <View style={styles.container}>
                 <BackGround blueView={'25%'} whiteView={'75%'} />
@@ -69,7 +92,7 @@ export default class MyJobsScreen extends Component {
                     leftButtonIconStyle={[styles.userProfileContainer]}
                     centerComponent={
                         <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 20 }}>
-                            <Text style={{ fontSize: 20, color: colors.white, fontWeight: 'bold' }}>{`Hi ${currentUser?.name},`}</Text>
+                            <Text style={{ fontSize: currentUser?.name.length > 15 ? 18 : 20, color: colors.white, fontWeight: 'bold' }}>{`Hi ${currentUser?.name},`}</Text>
                             <Text style={{ fontSize: 14, color: colors.white }}>{'What would you like to do today?'}</Text>
                         </View>
                     }
@@ -80,17 +103,17 @@ export default class MyJobsScreen extends Component {
                             activeOpacity={0.6}
                             style={{ width: "100%", justifyContent: 'center' }}
                             onPress={() => {
-
+                                navigation.navigate('ProfileSetting', { isModeEdit: true, userType: TRAVELER })
                             }}>
                             <Text style={{ fontSize: 12, color: colors.grey }}>{'Your status'}</Text>
-                            <Text style={{ fontSize: 20, color: colors.green, fontWeight: 'bold' }}>{'Active'}</Text>
+                            <Text style={{ fontSize: 20, color: profileStatusColor, fontWeight: 'bold' }}>{profileStatusTitleText}</Text>
                             <View style={{
                                 width: 20,
                                 height: 20,
                                 position: 'absolute',
                                 right: 0,
                                 top: 15,
-                                backgroundColor: colors.lightGrey,
+                                backgroundColor: colors.grey,
                                 borderRadius: 10,
                                 alignItems: "center",
                                 justifyContent: 'center'
@@ -101,18 +124,10 @@ export default class MyJobsScreen extends Component {
                                     resizeMode: 'contain'
                                 }} />
                             </View>
-                            <View style={{
-                                marginTop: 10,
-                                height: 40,
-                                justifyContent: 'center',
-                                backgroundColor: colors.backgroundGrey,
-                                borderRadius: 5
-                            }}>
-                                <Text style={{
-                                    fontSize: 12,
-                                    color: colors.green,
-                                    paddingHorizontal: 20
-                                }}>{'Actively Loking for travel offers.'}</Text>
+                            <View style={{ marginTop: 10, height: 40, justifyContent: 'center', backgroundColor: (profileStatusColor + '30'), borderRadius: 5 }}>
+                                <Text style={{ fontSize: 12, color: profileStatusColor, paddingHorizontal: 20 }}>
+                                    {profileStatusText}
+                                </Text>
                             </View>
                         </TouchableOpacity>
                         <View style={styles.horizontalDivider} />
@@ -123,14 +138,16 @@ export default class MyJobsScreen extends Component {
                                 navigation.navigate('ReceivedOffersScreen')
                             }}>
                             <Text style={{ fontSize: 12, color: colors.grey }}>{'Received Offers'}</Text>
-                            <Text style={{ fontSize: 20, color: colors.green, fontWeight: 'bold' }}>{'07'}</Text>
+                            <Text style={{ fontSize: 20, color: colors.green, fontWeight: 'bold' }}>
+                                {currentUser.received_offer_count < 10 ? `0${currentUser.received_offer_count}` : currentUser.received_offer_count}
+                            </Text>
                             <View style={{
                                 width: 20,
                                 height: 20,
                                 position: 'absolute',
                                 right: 0,
                                 top: 15,
-                                backgroundColor: colors.lightGrey,
+                                backgroundColor: colors.grey,
                                 borderRadius: 10,
                                 alignItems: "center",
                                 justifyContent: 'center'
@@ -152,7 +169,7 @@ export default class MyJobsScreen extends Component {
                                     fontSize: 12,
                                     color: colors.green,
                                     paddingHorizontal: 20
-                                }}>{'Offer for you by travel companies'}</Text>
+                                }}>{'Offers for you by travel companies'}</Text>
                             </View>
                         </TouchableOpacity>
                     </View>

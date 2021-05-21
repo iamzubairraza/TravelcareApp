@@ -32,7 +32,7 @@ export default class Splash extends Component {
                     colors={[colors.white, colors.primary]}
                     style={StyleSheet.absoluteFill}
                 ></LinearGradient>
-                <View style={[styles.container, { paddingHorizontal: 30, paddingVertical: 50 }]}>
+                <View style={[styles.container, { paddingHorizontal: 30, paddingTop: 50, paddingBottom: 20 }]}>
                     <View style={{ flex: 1 }} />
                     <Image
                         style={{ position: 'absolute', width: 150, height: 150, resizeMode: 'contain' }}
@@ -44,7 +44,8 @@ export default class Splash extends Component {
                             navigation.replace('AuthStack')
                         }}
                     />
-                    <Text style={styles.buttonTextStyle}>{'Terms of use. Cookie Policy\nPrivacy Policy'}</Text>
+                    <Text style={[styles.buttonTextStyle, { marginBottom: 20 }]}>{'Terms of use. Cookie Policy\nPrivacy Policy'}</Text>
+                    {/* <Text style={styles.poweredByTextStyle}>{'Powered by The App Guys'}</Text> */}
                 </View>
             </View>
         )
@@ -63,6 +64,13 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontSize: 14,
         color: colors.white,
+        textAlign: 'center'
+    },
+    poweredByTextStyle: {
+        marginTop: 20,
+        textAlign: 'center',
+        fontSize: 12,
+        color: colors.black,
         textAlign: 'center'
     },
 });

@@ -25,6 +25,7 @@ import {
 /** Main Stack of the app */
 const MainStack = () => {
     let initialRouteName = 'Splash'
+    // Preference.clear()
     const hassSession = Preference.get(preferenceKeys.HAS_SESSION)
     console.log('hassSession', hassSession)
     if (hassSession) {

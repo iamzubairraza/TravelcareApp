@@ -20,6 +20,8 @@ import colors from '../../../utils/colors';
 
 import { requestPost, API } from '../../../utils/API'
 
+const inputAccessoryViewID = 'VerificationScreen'
+
 export default class VerificationScreen extends Component {
     constructor(props) {
         super(props);
@@ -68,15 +70,14 @@ export default class VerificationScreen extends Component {
             formData.append('code', code)
             this.setState({ loadingOnVerify: true })
             requestPost(API.VERIFY_CODE, formData).then((response) => {
+                this.setState({ loadingOnVerify: false })
                 if (response.status == 200) {
-                    this.setState({ loadingOnSendMail: false })
-                    navigation.navigate('SetupNewPasswordScreen')
+                    navigation.navigate('SetupNewPasswordScreen', { email })
                 } else {
                     Alert.alert(null, response.message)
                 }
             }).catch(() => {
-                this.setState({ loadingOnSendMail: false })
-                // navigation.navigate('SetupNewPasswordScreen')
+                this.setState({ loadingOnVerify: false })
                 Alert.alert(null, 'Something went wrong')
             })
         }
@@ -130,6 +131,7 @@ export default class VerificationScreen extends Component {
                                         if (this.fieldCodeDigTwo) this.fieldCodeDigTwo.focus()
                                     }
                                 }}
+                                inputAccessoryViewID={inputAccessoryViewID}
                             />
                             <InputField
                                 fieldRef={ref => this.fieldCodeDigTwo = ref}
@@ -157,6 +159,7 @@ export default class VerificationScreen extends Component {
                                         if (this.fieldCodeDigThree) this.fieldCodeDigThree.focus()
                                     }
                                 }}
+                                inputAccessoryViewID={inputAccessoryViewID}
                             />
                             <InputField
                                 fieldRef={ref => this.fieldCodeDigThree = ref}
@@ -184,6 +187,7 @@ export default class VerificationScreen extends Component {
                                         if (this.fieldCodeDigFour) this.fieldCodeDigFour.focus()
                                     }
                                 }}
+                                inputAccessoryViewID={inputAccessoryViewID}
                             />
                             <InputField
                                 fieldRef={ref => this.fieldCodeDigFour = ref}
@@ -211,6 +215,7 @@ export default class VerificationScreen extends Component {
                                         Keyboard.dismiss()
                                     }
                                 }}
+                                inputAccessoryViewID={inputAccessoryViewID}
                             />
                         </View>
                         <View style={{ width: '75%', alignSelf: 'center', marginTop: 30 }}>

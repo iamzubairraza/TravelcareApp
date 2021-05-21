@@ -16,8 +16,8 @@ import OfferAcceptorDetailScreen from './OfferAcceptorDetailScreen'
 import ManageOffersScreen from './ManageOffersScreen'
 import NewOfferScreen from './NewOfferScreen'
 import AllJobsScreen from './AllJobsScreen'
-import GroupTravel from './GroupTravel'
-import SocialMedia from './SocialMedia'
+import OfferRecipientsScreen from './OfferRecipientsScreen'
+import JobDetailsScreen from './JobDetailsScreen'
 
 //Utils
 import colors from '../../utils/colors';
@@ -51,7 +51,7 @@ export default TravelAgencyStack = () => (
         <Stack.Screen name="ManageOffersScreen" component={ManageOffersScreen} />
         <Stack.Screen name="NewOfferScreen" component={NewOfferScreen} />
         <Stack.Screen name="AllJobsScreen" component={AllJobsScreen} />
-        <Stack.Screen name="GroupTravel" component={GroupTravel} />
-        <Stack.Screen name="SocialMedia" component={SocialMedia} />
+        <Stack.Screen name="OfferRecipientsScreen" component={OfferRecipientsScreen} />
+        <Stack.Screen name="JobDetailsScreen" component={JobDetailsScreen} />
     </Stack.Navigator>
 );

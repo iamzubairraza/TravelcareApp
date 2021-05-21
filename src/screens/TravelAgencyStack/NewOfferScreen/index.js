@@ -13,6 +13,9 @@ import {
 } from 'react-native';
 
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
+import DatePicker from 'react-native-date-picker'
+import moment from 'moment'
+
 import Button from '../../../components/Button'
 import InputField from '../../../components/InputField'
 import KeyboardAccessoryView from '../../../components/KeyboardAccessoryView'
@@ -30,27 +33,67 @@ import images from '../../../assets/images';
 const { width, height } = Dimensions.get('screen');
 const inputAccessoryViewID = 'NewOfferScreen'
 export default class NewOfferScreen extends Component {
+
     constructor(props) {
         super(props);
 
+        this.lock = false
+
+        const { params } = props.route
+        let isModeEdit = false
+        let offerName = ''
+        let offerId = -1
+        let shortDescription = ''
+        let fullDescription = ''
+        let offerEndDate = new Date()
+        let offerEndDateForAPI = ''
+
+        if (params) {
+            if (params.isModeEdit) {
+                isModeEdit = params.isModeEdit
+                if (params.offer) {
+                    const { offer } = params
+                    offerId = offer.id
+                    offerName = offer.title
+                    shortDescription = offer.short_description
+                    fullDescription = offer.full_description
+                    console.log('offer.end_date', offer.end_date)
+                    offerEndDate = new Date(moment(offer.end_date, "YYYY-MM-DD"))
+                    offerEndDateForAPI = new Date(moment(offer.end_date, "YYYY-MM-DD"))
+                }
+            }
+        }
+
         this.state = {
             loading: false,
-            offerName: '',
-            shortDescription: '',
-            fullDescription: '',
-            showSuccessModal: false
+            isModeEdit: isModeEdit,
+            offerId: offerId,
+            offerName: offerName,
+            shortDescription: shortDescription,
+            fullDescription: fullDescription,
+            showSuccessModal: false,
+            offerEndDate: offerEndDate,
+            offerEndDateForAPI: offerEndDateForAPI,
+            showDatePicker: false,
         }
     }
 
     componentDidMount() {
+        this.keyboardOpenListener = Keyboard.addListener("keyboardDidShow", (payload) => {
+            this.setState({ showDatePicker: false, offerEndDate: this.state.offerEndDateForAPI })
+        })
+    }
 
+    componentWillUnmount() {
+        if (this.keyboardOpenListener) this.keyboardOpenListener.remove()
     }
 
     verifyFields = () => {
         const {
             offerName,
             shortDescription,
-            fullDescription
+            fullDescription,
+            offerEndDateForAPI
         } = this.state
 
         if (offerName === '') {
@@ -61,6 +104,11 @@ export default class NewOfferScreen extends Component {
         } else if (shortDescription === '') {
             Alert.alert(null, 'Short description is required',
                 [{ text: 'OK', onPress: () => { this.fieldShortDescription.focus() } }]
+            )
+            return false
+        } else if (offerEndDateForAPI === '') {
+            Alert.alert(null, 'Offer end date is required',
+                [{ text: 'OK', onPress: () => { } }]
             )
             return false
         } else if (fullDescription === '') {
@@ -76,19 +124,33 @@ export default class NewOfferScreen extends Component {
     onConfirmPress = () => {
         const { navigation, route } = this.props
         const {
+            isModeEdit,
+            offerId,
             offerName,
             shortDescription,
-            fullDescription
+            fullDescription,
+            offerEndDateForAPI
         } = this.state
 
-        if (this.verifyFields()) {
+        if (this.lock) return
+        else if (this.verifyFields()) {
             Keyboard.dismiss()
+            this.lock = true
             let formData = new FormData();
             formData.append('offer_name', offerName)
             formData.append('short_description', shortDescription)
             formData.append('full_description', fullDescription)
+            formData.append('end_date', moment(offerEndDateForAPI).format('YYYY-MM-DD'))
             this.setState({ loading: true })
-            requestPostWithToken(API.CREATE_OFFER, formData).then((response) => {
+            let URL = ''
+            if (isModeEdit) {
+                formData.append('offer_id', offerId)
+                URL = API.UPDATE_OFFER
+            } else {
+                URL = API.CREATE_OFFER
+            }
+            requestPostWithToken(URL, formData).then((response) => {
+                this.lock = false
                 this.setState({ loading: false })
                 console.log('onConfirmPress', 'requestPost-response', response);
                 if (response.status == 200) {
@@ -101,6 +163,7 @@ export default class NewOfferScreen extends Component {
                     Alert.alert(null, response.message)
                 }
             }).catch((error) => {
+                this.lock = false
                 this.setState({ loading: false })
                 console.log('onConfirmPress', 'error', error)
                 Alert.alert(null, 'Something went wrong')
@@ -113,7 +176,11 @@ export default class NewOfferScreen extends Component {
             loading,
             offerName,
             shortDescription,
-            fullDescription
+            fullDescription,
+            offerEndDate,
+            offerEndDateForAPI,
+            showDatePicker,
+            isModeEdit
         } = this.state
         const { navigation } = this.props
         return (
@@ -123,17 +190,17 @@ export default class NewOfferScreen extends Component {
                     onLeftAction={() => {
                         navigation.goBack()
                     }}
-                    hearderText={"New Offer"}
+                    hearderText={isModeEdit ? "Edit Offer" : "New Offer"}
                 />
                 <KeyboardAwareScrollView
                     innerRef={ref => { this.scroll = ref }}
                     // bounces={false}
-                    keyboardShouldPersistTaps='handled'
+                    // keyboardShouldPersistTaps='handled'
                     showsHorizontalScrollIndicator={false}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ flexGrow: 1 }}
-                    style={{ flexGrow: 1, width: '100%', paddingHorizontal: 30, paddingTop: 20, paddingBottom: 50 }}>
-                    <View style={{ flex: 1 }}>
+                    style={{ flexGrow: 1, width: '100%', paddingHorizontal: 15, paddingTop: 20, paddingBottom: 50 }}>
+                    <View style={{ flex: 1, overflow: 'visible', marginHorizontal: 15, zIndex: 2 }}>
                         <InputField
                             fieldRef={ref => this.fieldOfferName = ref}
                             onParentPress={() => { if (this.fieldOfferName) this.fieldOfferName.focus() }}
@@ -155,6 +222,7 @@ export default class NewOfferScreen extends Component {
                             value={shortDescription}
                             placeholder={'Short description'}
                             returnKeyType='next'
+                            maxLength={100}
                             onChangeText={(text) => {
                                 this.setState({ shortDescription: text })
                             }}
@@ -163,6 +231,14 @@ export default class NewOfferScreen extends Component {
                             }}
                             inputAccessoryViewID={inputAccessoryViewID}
                         />
+                        <TouchableOpacity
+                            activeOpacity={0.7}
+                            style={[styles.datePickerInputContainer, styles.shadowElevation]}
+                            onPress={() => {
+                                this.setState({ showDatePicker: true })
+                            }}>
+                            <Text style={{ color: offerEndDateForAPI ? colors.black : colors.mediumGrey }}>{offerEndDateForAPI ? moment(offerEndDateForAPI).format('YYYY-MM-DD') : 'Select End Date'}</Text>
+                        </TouchableOpacity>
                         <InputField
                             fieldRef={ref => this.fieldDesctiption = ref}
                             onParentPress={() => { if (this.fieldDesctiption) this.fieldDesctiption.focus() }}
@@ -177,17 +253,55 @@ export default class NewOfferScreen extends Component {
                             inputAccessoryViewID={inputAccessoryViewID}
                         />
                     </View>
-                    <Button
-                        activityIndicatorProps={{ loading: loading }}
-                        containerStyle={{ backgroundColor: colors.green, marginBottom: 70 }}
-                        buttonTextStyle={{ color: colors.white }}
-                        buttonText={'Confirm'}
-                        onPressButton={() => {
-                            this.onConfirmPress()
-                        }}
-                    />
+                    <View style={{ marginHorizontal: 15 }}>
+                        <Button
+                            activityIndicatorProps={{ loading: loading }}
+                            containerStyle={{ backgroundColor: colors.green, marginBottom: 70 }}
+                            buttonTextStyle={{ color: colors.white }}
+                            buttonText={isModeEdit ? 'Save' : 'Confirm'}
+                            onPressButton={() => {
+                                this.onConfirmPress()
+                            }}
+                        />
+                    </View>
                     <KeyboardAccessoryView inputAccessoryViewID={inputAccessoryViewID} />
                 </KeyboardAwareScrollView>
+                {showDatePicker &&
+                    <View style={[styles.datePickerContainer]}>
+                        <View style={[{ backgroundColor: colors.lightGrey, width: '100%', borderRadius: 10, alignItems: 'center' }, styles.shadowElevation]}>
+                            <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-around', height: 55, alignItems: 'center' }}>
+                                <TouchableOpacity
+                                    activeOpacity={0.7}
+                                    style={[{ flex: 1, marginRight: 5 }, styles.datePickerButton]}
+                                    onPress={() => {
+                                        this.setState({ showDatePicker: false, offerEndDate: offerEndDateForAPI })
+                                    }}>
+                                    <Text style={{ color: colors.red }}>{'Cancel'}</Text>
+                                </TouchableOpacity>
+                                <View style={{ height: 30, width: 1, backgroundColor: colors.mediumGrey }} />
+                                <TouchableOpacity
+                                    activeOpacity={0.7}
+                                    style={[{ flex: 1, marginLeft: 5 }, styles.datePickerButton]}
+                                    onPress={() => {
+                                        this.setState({ showDatePicker: false, offerEndDateForAPI: offerEndDate })
+                                    }}>
+                                    <Text style={{ color: colors.primary }}>{'Confirm'}</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <View style={{ borderBottomColor: colors.mediumGrey, borderBottomWidth: 1, width: '90%' }} />
+                            <View style={{ width: '100%', alignItems: 'center', overflow: 'hidden' }}>
+                                <DatePicker
+                                    mode={'date'}
+                                    date={offerEndDate}
+                                    onDateChange={(date) => {
+                                        console.log('date', date)
+                                        this.setState({ offerEndDate: date })
+                                    }}
+                                />
+                            </View>
+                        </View>
+                    </View>
+                }
             </View>
         )
     }
@@ -213,5 +327,41 @@ const styles = StyleSheet.create({
         backgroundColor: colors.mediumGrey,
         height: 1
     },
+    datePickerInputContainer: {
+        flexDirection: 'row',
+        height: 55,
+        alignItems: 'center',
+        backgroundColor: colors.lightGrey,
+        marginTop: 10,
+        borderRadius: 10,
+        paddingHorizontal: 15,
+    },
+    datePickerContainer: {
+        width: '100%',
+        alignItems: 'center',
+        borderRadius: 20,
+        // backgroundColor: colors.lightGrey,
+        paddingHorizontal: 30,
+    },
+    datePickerButton: {
+        flexDirection: 'row',
+        height: 55,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.lightGrey,
+        borderRadius: 10,
+        paddingHorizontal: 15,
+    },
+    shadowElevation: {
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.10,
+        shadowRadius: 10.84,
+
+        elevation: 5,
+    }
 });
 

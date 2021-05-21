@@ -2,7 +2,11 @@ import Preference from 'react-native-preference'
 import preferenceKeys from './preferenceKeys'
 import axios from "axios";
 
-// const BASE_URL = 'https://google.com'
+export const STRIPE_TEST_KEY = 'pk_test_51ICjTgGl9UMJlLFTGJMlYyXLZsHEcPZyXzR2TArNB7j5q7WonD3koaxGzt7Gs35qoGl4AVCYlif7N8THoBxED1XH00If0u4Lwa'
+export const STRIPE_LIVE_KEY = 'pk_test_51ICjTgGl9UMJlLFTGJMlYyXLZsHEcPZyXzR2TArNB7j5q7WonD3koaxGzt7Gs35qoGl4AVCYlif7N8THoBxED1XH00If0u4Lwa'
+
+export const PAYPAL_CLIENT_ID = 'AWlK_rkhBN96VhYHumXaoc9mYqAFJV-KMhN04tmNfj3RAqjTNTLHJRYwoYz_pgsvqvupWmSR3Q-vY_UZ'
+
 const BASE_URL = 'https://travel.crmstock.io'
 const ROUTE = '/api'
 
@@ -10,11 +14,9 @@ const API_URL = BASE_URL + ROUTE
 
 export const API = {
     //POST TRAVELER
-    TRAVELER_SIGN_UP: API_URL + '/traveler-sign-up',
     COMPANY_SIGN_UP: API_URL + '/company-sign-up',
     ADMIN_LOGIN: API_URL + '/admin-login',
     ADMIN_LOGIN1: API_URL + '/login',
-    TRAVELER_LOGIN: API_URL + '/traveler-login',
     COMPANY_LOGIN: API_URL + '/company-login',
     UPDATE_TRAVELER_PROFILE: API_URL + '/update-traveler-profile',
     UPDATE_COMPANY_PROFILE: API_URL + '/update-company-profile',
@@ -23,18 +25,38 @@ export const API = {
     VERIFY_CODE: API_URL + '/verify-code',
     RESET_PASSWORD: API_URL + '/reset-password',
     CREATE_OFFER: API_URL + '/create-offer',
+    UPDATE_OFFER: API_URL + '/update-offer',
     SEND_OFFER: API_URL + '/send-offer',
+    CANCEL_OFFER: API_URL + '/cancel-offer',
+    ADD_TRANSACTION: API_URL + '/add-transaction',
+    ADD_SUBSCRIPTION: API_URL + '/add-subscription',
+    ADD_REVIEW: API_URL + '/add-review',
+    CHANGE_TRAVELER_PROFILE_STATUS: API_URL + '/change-traveler-profile-status',
+    TRAVELER_SIGN_UP: API_URL + '/traveler-sign-up',
+    TRAVELER_LOGIN: API_URL + '/traveler-login',
+    TRAVELER_CLAIM_OFFER: API_URL + '/traveler-claim-offer',
+    TRAVELER_CANCEL_OFFER_CLAIM: API_URL + '/traveler-cancel-offer-claim',
 
     //GET
+    GET_PLANS: API_URL + '/get-plans',
     GET_PROFILE: API_URL + '/get-profile',
     GET_ORGANIZATIONS: API_URL + '/get-organizations',
-    GET_SERVICES: API_URL + '/get-services',
     GET_TRAVELERS: API_URL + '/get-travelers',
+    GET_TOP_TRAVELERS: API_URL + '/get-top-travelers',
+    GET_OTHER_TRAVELERS: API_URL + '/get-others-travelers',
     GET_TRAVELER_DETAILS: API_URL + '/get-traveler',
     GET_COMPANY_OFFERS: API_URL + '/get-company-offers',
+    GET_COMPANY_JOBS: API_URL + '/get-company-jobs',
     GET_ACCEPTED_OFFERS: API_URL + '/get-accepted-offers',
     GET_MANAGE_OFFERS: API_URL + '/get-manage-offers',
     GET_OFFER_RECIPIENTS: API_URL + '/get-offer-recipents',
+    GET_SERVICES: API_URL + '/get-services',
+    GET_PENDING_REVIEW: API_URL + '/get-pending-review',
+    GET_TRAVELER_JOB_HISTORY: API_URL + '/get-traveler-job-history',
+    GET_TRAVELER_RECEIVED_OFFERS: API_URL + '/get-traveler-received-offers',
+    GET_TRAVELER_OFFER_DETAILS: API_URL + '/get-traveler-get-offer-details',
+    GET_TRAVELER_COMPANIES: API_URL + '/traveler-get-companies',
+    GET_TRAVELER_COMPANY_WITH_OFFERS: API_URL + '/traveler-get-company-with-offers',
     LOGOUT: API_URL + '/logout',
 }
 
@@ -60,6 +82,7 @@ export const requestPost = (url, data, extraHeaders = {}, extraOpptions = {}) =>
 
 export const requestPostWithToken = (url, data, extraHeaders = {}, extraOpptions = {}) => {
     const AUTH_TOKEN = Preference.get(preferenceKeys.AUTH_TOKEN)
+    console.log('API', 'requestGetWithToken-token', AUTH_TOKEN);
     return new Promise((resolve, reject) => {
         axios.post(url,
             data, {

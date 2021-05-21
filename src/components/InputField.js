@@ -12,7 +12,7 @@ import _ from 'lodash'
 
 import colors from '../utils/colors';
 
-export default Button = (props) => {
+export default InputField = (props) => {
     const {
         inputContainer,
         onParentPress,
@@ -30,6 +30,7 @@ export default Button = (props) => {
         rightIconStyle,
         onRightIconPress,
         hideShadowElevation,
+        rightIconContainerStyle
     } = props
 
     return (
@@ -65,7 +66,7 @@ export default Button = (props) => {
             {rightIcon &&
                 <TouchableOpacity
                     disabled={_.isNil(onRightIconPress)}
-                    style={{ padding: 10 }}
+                    style={[{ padding: 10 }, rightIconContainerStyle]}
                     onPress={() => {
                         if (onRightIconPress) onRightIconPress()
                     }}>

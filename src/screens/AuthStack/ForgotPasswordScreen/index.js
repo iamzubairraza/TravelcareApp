@@ -32,6 +32,7 @@ export default class ForgotPasswordScreen extends Component {
 
         this.state = {
             loading: false,
+            loadingOnSendMail: false,
             email: email,
         }
     }
@@ -65,15 +66,14 @@ export default class ForgotPasswordScreen extends Component {
             formData.append('email', email)
             this.setState({ loadingOnSendMail: true })
             requestPost(API.SEND_FORGOT_PASSWORD_EMAIL, formData).then((response) => {
+                this.setState({ loadingOnSendMail: false })
                 if (response.status == 200) {
-                    this.setState({ loadingOnSendMail: false })
-                    navigation.navigate('VerificationScreen')
+                    navigation.navigate('VerificationScreen', { email })
                 } else {
                     Alert.alert(null, response.message)
                 }
             }).catch(() => {
                 this.setState({ loadingOnSendMail: false })
-                // navigation.navigate('VerificationScreen')
                 Alert.alert(null, 'Something went wrong')
             })
         }

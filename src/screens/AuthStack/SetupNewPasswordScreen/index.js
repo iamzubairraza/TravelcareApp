@@ -24,6 +24,7 @@ import colors from '../../../utils/colors';
 import { requestPost, API } from '../../../utils/API'
 
 const { height } = Dimensions.get('screen');
+const inputAccessoryViewID = 'SetupNewPasswordScreen'
 
 export default class SetupNewPasswordScreen extends Component {
     constructor(props) {
@@ -76,27 +77,31 @@ export default class SetupNewPasswordScreen extends Component {
             formData.append('email', email)
             formData.append('password', password)
             this.setState({ loadingOnSetPassword: true })
+            console.log('onSetAsNewPasswordPress', 'formData', formData)
             requestPost(API.RESET_PASSWORD, formData).then((response) => {
                 if (response.status == 200) {
-                    this.setState({ showOptionModal: true, loadingOnSetPassword: false })
-                    setTimeout(() => {
-                        this.setState({ showOptionModal: false }, () => {
-                            setTimeout(() => {
-                                navigation.pop(3)
-                            }, 100);
-                        })
-                    }, 2000);
+                    this.setState({ showOptionModal: true, loadingOnSetPassword: false }, () => {
+                        setTimeout(() => {
+                            this.setState({ showOptionModal: false }, () => {
+                                setTimeout(() => {
+                                    navigation.pop(3)
+                                }, 100);
+                            })
+                        }, 2000);
+                    })
                 } else {
+                    this.setState({ loadingOnSetPassword: false })
                     Alert.alert(null, response.message)
                 }
             }).catch(() => {
-                this.setState({ showOptionModal: true, loadingOnSetPassword: false })
+                this.setState({ loadingOnSetPassword: false })
                 Alert.alert(null, 'Something went wrong')
             })
         }
     }
 
     renderOptionModel = () => {
+        const { showOptionModal } = this.state
         return (
             <Modal
                 animationType="slide"
@@ -172,6 +177,7 @@ export default class SetupNewPasswordScreen extends Component {
                         onRightIconPress={() => {
                             this.setState({ isHiddenPassword: !isHiddenPassword })
                         }}
+                        inputAccessoryViewID={inputAccessoryViewID}
                     />
                     <InputField
                         fieldRef={ref => this.fieldConfrimPassword = ref}
@@ -191,6 +197,7 @@ export default class SetupNewPasswordScreen extends Component {
                         onRightIconPress={() => {
                             this.setState({ isHiddenConfirmPassword: !isHiddenConfirmPassword })
                         }}
+                        inputAccessoryViewID={inputAccessoryViewID}
                     />
                     <View style={{ flex: 1 }} />
                     <Button

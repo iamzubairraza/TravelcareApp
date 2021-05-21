@@ -2,69 +2,93 @@ import React, { Component } from 'react';
 import {
     View,
     Text,
-    Image,
     Alert,
-    TouchableOpacity,
     Dimensions,
-    Modal,
-    StatusBar,
+    FlatList,
     StyleSheet,
-    Keyboard,
 } from 'react-native';
-
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
+import moment from 'moment'
 
 import Button from '../../../components/Button'
 import PlanCard from '../../../components/PlanCard'
+import Loader from '../../../components/Loader'
 
-import images from '../../../assets/images'
 import icons from '../../../assets/icons'
 import colors from '../../../utils/colors';
 
-const { width, height } = Dimensions.get('screen');
+import { API, requestGet } from '../../../utils/API';
 
-import {
-    BASIC,
-    PROFESSIONAL,
-    ENTERPRISE
-} from '../../../utils/constants'
+const { width, height } = Dimensions.get('screen');
 
 export default class PaymentPlanScreen extends Component {
     constructor(props) {
         super(props);
 
+        const { params } = this.props.route
+        let isModeEdit = false
+        let plan = "0"
+        if (params) {
+            if (params.isModeEdit) isModeEdit = params.isModeEdit
+            if (params.plan) plan = params.plan
+        }
+
+        console.log("params", params)
+
         this.state = {
             loading: false,
-            selectedPeckage: BASIC
+            plansList: [],
+            activeIndex: 0,
+            isModeEdit: isModeEdit,
+            plan: plan
         }
     }
 
     componentDidMount() {
+        this.getPlans()
+    }
 
+    getPlans = () => {
+        const { plan } = this.state
+        this.setState({ loading: true })
+        requestGet(API.GET_PLANS).then((response) => {
+            this.setState({ loading: false })
+            if (response.status == 200) {
+                console.log('getPlans', 'response.data', response.data, plan)
+                this.setState({ plansList: response.data }, () => [
+                    response.data?.map((item, index) => {
+                        if (plan == item.id) {
+                            this.setState({ activeIndex: index })
+                        }
+                    })
+                ])
+            } else {
+                Alert.alert(null, response.message)
+            }
+        }).catch((error) => {
+            this.setState({ loading: false })
+            console.log('getPlans', 'error', error)
+        })
     }
 
     render() {
         const {
             loading,
-            selectedPeckage,
+            plansList,
+            activeIndex,
+            isModeEdit
         } = this.state
         const { navigation } = this.props
 
         return (
             <View style={styles.container}>
                 <Header
-                    leftIcon={icons.backArrow}
-                    onLeftAction={() => navigation.goBack()}
+                    leftIcon={isModeEdit ? icons.backArrow : null}
+                    onLeftAction={() => {
+                        if (isModeEdit) navigation.goBack()
+                    }}
                     hearderText={"Plans & Payments"}
                 />
-                <KeyboardAwareScrollView
-                    innerRef={ref => { this.scroll = ref }}
-                    bounces={false}
-                    keyboardShouldPersistTaps='handled'
-                    showsHorizontalScrollIndicator={false}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ flexGrow: 1 }}
-                    style={{ flexGrow: 1, width: '100%', paddingHorizontal: 30, paddingTop: 20, paddingBottom: 50 }}>
+                <View style={{ flex: 1, width: '100%', paddingHorizontal: 30, paddingTop: 20, paddingBottom: 50 }}>
                     <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: 'row', width: '80%', alignSelf: 'center', justifyContent: 'center' }}>
                             <View style={{ alignItems: 'center', width: 80 }}>
@@ -85,33 +109,29 @@ export default class PaymentPlanScreen extends Component {
                         <View style={{ flex: 1, paddingVertical: 20, marginTop: 20 }}>
                             <Text style={{ fontSize: 23, fontWeight: '600' }}>{'Select a plan'}</Text>
                             <Text style={{ color: colors.mediumGrey }}>{'Select offer that best suits your needs'}</Text>
-
-                            <PlanCard
-                                containerStyle={{ marginTop: 20 }}
-                                isChecked={selectedPeckage == BASIC}
-                                buttonTitleText={'Basic'}
-                                buttonDesctiptionText={'Basic feature offered'}
-                                peckageText={'$19/mo'}
-                                onPressButton={() => {
-                                    this.setState({ selectedPeckage: BASIC })
-                                }}
-                            />
-                            <PlanCard
-                                isChecked={selectedPeckage == PROFESSIONAL}
-                                buttonTitleText={'Professional'}
-                                buttonDesctiptionText={'Pro feature offered'}
-                                peckageText={'$29/mo'}
-                                onPressButton={() => {
-                                    this.setState({ selectedPeckage: PROFESSIONAL })
-                                }}
-                            />
-                            <PlanCard
-                                isChecked={selectedPeckage == ENTERPRISE}
-                                buttonTitleText={'Enterprise'}
-                                buttonDesctiptionText={'Unlimited feature offered'}
-                                peckageText={'$199/mo'}
-                                onPressButton={() => {
-                                    this.setState({ selectedPeckage: ENTERPRISE })
+                            <FlatList
+                                listKey={moment().format('x').toString()}
+                                showsVerticalScrollIndicator={false}
+                                showsHorizontalScrollIndicator={false}
+                                data={plansList}
+                                style={{ marginBottom: 10 }}
+                                extraData={plansList}
+                                keyExtractor={(item, index) => (item.id).toString()}
+                                numColumns={1}
+                                renderItem={({ item, index }) => {
+                                    return (
+                                        <PlanCard
+                                            key={item.id}
+                                            containerStyle={{ marginTop: 15 }}
+                                            isChecked={activeIndex == index}
+                                            buttonTitleText={item.title}
+                                            buttonDesctiptionText={item.description}
+                                            peckageText={item.amount}
+                                            onPressButton={() => {
+                                                this.setState({ activeIndex: index })
+                                            }}
+                                        />
+                                    )
                                 }}
                             />
 
@@ -120,12 +140,14 @@ export default class PaymentPlanScreen extends Component {
                                 buttonTextStyle={{ color: colors.white }}
                                 buttonText={'Step 2: Payment Info'}
                                 onPressButton={() => {
-                                    navigation.navigate('PaymentInfoScreen')
+                                    const selectedPeckage = plansList[activeIndex]
+                                    navigation.navigate('PaymentInfoScreen', { selectedPeckage, isModeEdit: isModeEdit })
                                 }}
                             />
                         </View>
                     </View>
-                </KeyboardAwareScrollView>
+                </View>
+                <Loader loading={loading} />
             </View>
         )
     }

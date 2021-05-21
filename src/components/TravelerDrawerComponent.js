@@ -51,6 +51,7 @@ export default class CompanyDrawerContent extends Component {
     }
 
     onLogoutPress = () => {
+        // Preference.clear()
         const { navigation } = this.props
         this.setState({ loadingOnLogout: true })
         requestGetWithToken(API.LOGOUT).then((response) => {
@@ -73,7 +74,7 @@ export default class CompanyDrawerContent extends Component {
     render() {
         const { navigation } = this.props
         const { currentUser, loadingOnLogout } = this.state
-        const { image, name } = currentUser
+        const { image, name, services, service } = currentUser
         return (
             <ScrollView
                 bounces={false}
@@ -88,7 +89,9 @@ export default class CompanyDrawerContent extends Component {
                         />
                     </View>
                     <Text style={{ color: colors.primary, fontSize: 18, fontWeight: 'bold' }}>{name}</Text>
-                    <Text style={{ color: colors.mediumGrey }}>{'Doctor'}</Text>
+                    <Text style={{ color: colors.mediumGrey }}>
+                        {Array.isArray(services) ? services[0]?.name : service}
+                    </Text>
                     <DrawerItem
                         title={'Profile Setting'}
                         onPress={() => {
@@ -105,6 +108,12 @@ export default class CompanyDrawerContent extends Component {
                         title={'Travel Companies'}
                         onPress={() => {
                             this.navigateTo('TravelCompaniesScreen')
+                        }}
+                    />
+                    <DrawerItem
+                        title={'Reviews'}
+                        onPress={() => {
+                            this.navigateTo('ReviewsScreen')
                         }}
                     />
                     <View style={{ flex: 1 }} />

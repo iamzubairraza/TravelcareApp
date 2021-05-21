@@ -3,7 +3,6 @@ import {
     View,
     Text,
     Image,
-    ImageBackground,
     Alert,
     TouchableOpacity,
     StyleSheet, FlatList,
@@ -22,53 +21,67 @@ import icons from '../../../assets/icons'
 import colors from '../../../utils/colors';
 import BackGround from '../../../components/HomeBackGround';
 import Header from '../../../components/Header';
+import { API, requestGetWithToken } from '../../../utils/API';
+import preferenceKeys from '../../../utils/preferenceKeys';
 
 export default class MyJobsScreen extends Component {
     constructor(props) {
         super(props);
+
         this.state = {
             loading: false,
             mainHeading: "My Jobs",
             mainText: "My medical career",
-            jobsList: [
-                {
-                    jobTitle: 'Chief of Surgery',
-                    organization: 'Bulleford General Hospital',
-                    startingDate: moment().subtract(1, 'year'),
-                    endingDate: null,
-                    department: 'Manage the organizational aspect of Department of Surgery'
-                },
-                {
-                    jobTitle: 'Social Media Manager',
-                    organization: 'Numford University Hospital',
-                    startingDate: moment().subtract(3, 'year'),
-                    endingDate: moment().subtract(2, 'year'),
-                    department: 'Created dianostic and therapeutic plans for surgical patients'
-                },
-            ]
+            jobsList: []
         }
     }
 
     componentDidMount() {
-
+        this.getMyJobsDetails()
     }
 
-    renderJobItem = (item, index) => {
+    getMyJobsDetails = () => {
+        const { id } = Preference.get(preferenceKeys.CURRENT_USER)
+        this.setState({ loading: true })
+        requestGetWithToken(`${API.GET_TRAVELER_JOB_HISTORY}/${id}`).then((response) => {
+            this.setState({ loading: false })
+            console.log('getMyJobsDetails', 'requestPost-response', response);
+            if (response.status == 200) {
+                this.setState({ jobsList: response.data })
+            } else {
+                Alert.alert(null, response.message)
+            }
+        }).catch((error) => {
+            this.setState({ loading: false })
+            console.log('getMyJobsDetails', 'error', error)
+            Alert.alert(null, 'Something went wrong')
+        })
+    }
+
+    renderJobItem = (job, index) => {
+        const item = job.offers
         const { navigation } = this.props
+        const offerEndDate = new Date(moment(item.end_date, "YYYY-MM-DD"))
+
+        const currentDate = parseInt(moment().format('YYYYMM'))
+        const endDate = parseInt(moment(offerEndDate).format('YYYYMM'))
+
+        console.log(currentDate + " >= " + endDate + " = " + (currentDate >= endDate))
+
+        const isActive = endDate >= currentDate
         return (
             <TouchableOpacity
                 activeOpacity={0.6}
                 style={styles.jobItemStyle}
                 onPress={() => {
-                    if (item.jobTitle === 'Social Media Manager')
-                        navigation.navigate('SocialMedia')
+                    navigation.navigate('JobDetailsScreen', { jobDetails: item })
                 }}>
                 <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 20, color: colors.black, fontWeight: "bold" }}>{item.jobTitle}</Text>
+                    <Text style={{ fontSize: 20, color: colors.black, fontWeight: "bold" }}>{item.title}</Text>
                     <Text style={{ fontSize: 11, color: colors.primary, marginTop: 5 }}>
-                        {item.organization} | {moment(item.startingDate).format('MMM YYYY')} - {item.endingDate ? moment(item.endingDate).format('MMM YYYY') : 'Present'}
+                    {item.users?.name} | {moment(item.created_at).format('MMM YYYY')} - {isActive ? 'Present' : moment(offerEndDate).format('MMM YYYY')}
                     </Text>
-                    <Text style={{ fontSize: 11, color: colors.mediumGrey, marginTop: 5 }}>{item.organization}</Text>
+                    <Text style={{ fontSize: 11, color: colors.mediumGrey, marginTop: 5 }}>{item.short_description}</Text>
                 </View>
                 <View style={{
                     width: 20,
@@ -101,7 +114,7 @@ export default class MyJobsScreen extends Component {
                     leftIcon={icons.backArrow}
                     leftButtonIconStyle={{ tintColor: colors.white }}
                 />
-                <View style={{ height: 60 }}>
+                <View style={{ minHeight: 60, paddingHorizontal: 40 }}>
                     <Text style={styles.hearderText}>{this.state.mainHeading}</Text>
                     <Text style={styles.hearderBelowText}>{this.state.mainText}</Text>
                 </View>
@@ -160,13 +173,11 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: 'bold',
         color: colors.white,
-        marginLeft: 40
     },
     hearderBelowText: {
         width: '80%',
         fontSize: 12,
         color: colors.white,
-        marginLeft: 40,
         marginTop: 5,
     },
 });

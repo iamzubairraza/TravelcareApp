@@ -51,6 +51,7 @@ export default class CompanyDrawerContent extends Component {
     }
 
     onLogoutPress = () => {
+        // Preference.clear()
         const { navigation } = this.props
         this.setState({ loadingOnLogout: true })
         requestGetWithToken(API.LOGOUT).then((response) => {

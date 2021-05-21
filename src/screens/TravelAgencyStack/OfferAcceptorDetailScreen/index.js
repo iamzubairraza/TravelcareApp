@@ -8,34 +8,39 @@ import {
     TouchableOpacity,
     StyleSheet, FlatList,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import Preference from 'react-native-preference'
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import moment from 'moment'
-import Animated from 'react-native-reanimated';
-import BottomSheet from 'reanimated-bottom-sheet';
 
-import Button from '../../../components/Button'
-import InputField from '../../../components/InputField'
-import images from '../../../assets/images'
 import icons from '../../../assets/icons'
+
 import colors from '../../../utils/colors';
-import BackGround from '../../../components/HomeBackGround';
-import Header from '../../../components/Header';
 import { API, requestGetWithToken } from '../../../utils/API';
+
+import Header from '../../../components/Header';
+import Loader from '../../../components/Loader';
+
+const dummyJobHistory = [
+    {
+        jobTitle: 'Chief of Surgery',
+        organization: 'Bulleford General Hospital',
+        startingDate: moment().subtract(1, 'year'),
+        endingDate: null,
+        department: 'Manage the organizational aspect of Department of Surgery'
+    },
+    {
+        jobTitle: 'Surgical Resident',
+        organization: 'Numford University Hospital',
+        startingDate: moment().subtract(3, 'year'),
+        endingDate: moment().subtract(2, 'year'),
+        department: 'Created dianostic and therapeutic plans for surgical patients'
+    },
+]
 
 export default class OfferAcceptorDetailScreen extends Component {
     constructor(props) {
         super(props);
 
-        let traveler = {
-            image: "https://travel.crmstock.io/storage/app/TravelerImages/H9j4vHyjXwv9y4EYv8qt61SVwFmdkrgqZgaDMClV.jpeg",
-            name: 'Kevin E.Parker',
-            jobTitle: 'Chief of Surgery',
-            jobsDone: '80 jobs done',
-        }
+        let traveler = {}
         const { params } = props.route
-
         if (params) {
             if (params.traveler) traveler = params.traveler
         }
@@ -43,43 +48,22 @@ export default class OfferAcceptorDetailScreen extends Component {
         this.state = {
             loading: false,
             traveler: traveler,
-            anyItemSelected: false,
-            displayBottomSheet: false,
-            mainHeading: "Accepted Offers",
-            mainText: "Offers that are accepted by travelers",
-            myJobHistoryList: [
-                {
-                    jobTitle: 'Chief of Surgery',
-                    organization: 'Bulleford General Hospital',
-                    startingDate: moment().subtract(1, 'year'),
-                    endingDate: null,
-                    department: 'Manage the organizational aspect of Department of Surgery'
-                },
-                {
-                    jobTitle: 'Surgical Resident',
-                    organization: 'Numford University Hospital',
-                    startingDate: moment().subtract(3, 'year'),
-                    endingDate: moment().subtract(2, 'year'),
-                    department: 'Created dianostic and therapeutic plans for surgical patients'
-                },
-            ]
+            myJobHistoryList: []
         }
     }
 
     componentDidMount() {
-        const { params } = this.props.route
-        console.log('getTravelerDetails', 'params?.traveler?.id', params?.traveler?.id)
-        this.getTravelerDetails(params?.traveler?.id)
+        const { traveler } = this.state
+        this.getTravelerDetails(traveler?.id)
     }
 
     getTravelerDetails = (id) => {
-        // this.setState({ loading: true })
+        this.setState({ loading: true })
         requestGetWithToken(API.GET_TRAVELER_DETAILS + '/' + id).then((response) => {
             this.setState({ loading: false })
             if (response.status == 200) {
-                console.log('getTravelerDetails', 'travelers', response)
-                if (response.data)
-                    this.setState({ traveler: response.data })
+                // console.log('getTravelerDetails', 'travelers', JSON.stringify(response))
+                this.setState({ traveler: response.data })
             } else {
                 Alert.alert(null, response.message)
             }
@@ -89,22 +73,30 @@ export default class OfferAcceptorDetailScreen extends Component {
         })
     }
 
-    renderJobItem = (item, index) => {
+    renderJobItem = (job, index) => {
+        const item = job.offers
         const { navigation } = this.props
+        const offerEndDate = new Date(moment(item.end_date, "YYYY-MM-DD"))
+
+        const currentDate = parseInt(moment().format('YYYYMM'))
+        const endDate = parseInt(moment(offerEndDate).format('YYYYMM'))
+
+        console.log(currentDate + " >= " + endDate + " = " + (currentDate >= endDate))
+
+        const isActive = endDate >= currentDate
         return (
             <TouchableOpacity
-                disabled={true}
                 activeOpacity={0.6}
                 style={styles.jobItemStyle}
                 onPress={() => {
-                    // navigation.navigate('TravelerListScreen')
+                    navigation.navigate('JobDetailsScreen', { jobDetails: item })
                 }}>
                 <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 20, color: colors.black, fontWeight: "bold" }}>{item.jobTitle}</Text>
-                    <Text style={{ fontSize: 11, color: colors.primary }}>
-                        {item.organization} | {moment(item.startingDate).format('MMM YYYY')} - {item.endingDate ? moment(item.endingDate).format('MMM YYYY') : 'Present'}
+                    <Text style={{ fontSize: 20, color: colors.black, fontWeight: "bold" }}>{item.title}</Text>
+                    <Text style={{ fontSize: 11, color: colors.primary, marginVertical: 5 }}>
+                        {item.users?.name} | {moment(item.created_at).format('MMM YYYY')} - {isActive ? 'Present' : moment(offerEndDate).format('MMM YYYY')}
                     </Text>
-                    <Text style={{ fontSize: 11, color: colors.grey }}>{item.department}</Text>
+                    <Text style={{ fontSize: 11, color: colors.grey }}>{item.short_description}</Text>
                 </View>
                 <View style={{
                     width: 20,
@@ -114,18 +106,21 @@ export default class OfferAcceptorDetailScreen extends Component {
                     alignItems: "center",
                     justifyContent: 'center'
                 }}>
-                    <Image source={require('../../../assets/icons/right_arrow.png')} style={{
-                        width: 10,
-                        height: 10,
-                        resizeMode: 'contain'
-                    }} />
+                    <Image
+                        source={require('../../../assets/icons/right_arrow.png')}
+                        style={{
+                            width: 10,
+                            height: 10,
+                            resizeMode: 'contain'
+                        }}
+                    />
                 </View>
             </TouchableOpacity>
         )
     }
 
     render() {
-        const { traveler, myJobHistoryList } = this.state
+        const { loading, traveler, myJobHistoryList } = this.state
         const { navigation } = this.props
         return (
             <View style={styles.container}>
@@ -138,14 +133,16 @@ export default class OfferAcceptorDetailScreen extends Component {
                                 navigation.goBack()
                             }}
                             leftIcon={icons.backArrow}
-                            leftButtonIconStyle={{ tintColor: colors.white }}
+                            leftButtonIconStyle={{ tintColor: colors.black }}
                         />
                     </ImageBackground>
                 </View>
                 <View style={[styles.jobItemStyle, { marginTop: 20, flexDirection: 'column', alignItems: 'flex-start' }]}>
                     <Text style={{ fontSize: 20, color: colors.black, fontWeight: "bold" }}>{traveler.name}</Text>
-                    <Text style={{ fontSize: 11, color: colors.primary }}>{traveler.jobTitle}</Text>
-                    <Text style={{ fontSize: 11, color: colors.grey }}>{traveler.jobsDone}</Text>
+                    <Text style={{ fontSize: 11, color: colors.primary, marginVertical: 5 }}>
+                        {Array.isArray(traveler.services) ? traveler.services[0].name : traveler.service}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: colors.grey }}>{traveler.jobs + " jobs done"}</Text>
                 </View>
                 <View style={{ paddingHorizontal: 15 }}>
                     <Text style={{ marginVertical: 20, color: colors.mediumGrey }}>{'My Job History'}</Text>
@@ -155,9 +152,9 @@ export default class OfferAcceptorDetailScreen extends Component {
                         listKey={moment().format('x').toString()}
                         showsVerticalScrollIndicator={false}
                         showsHorizontalScrollIndicator={false}
-                        data={myJobHistoryList}
+                        data={traveler?.job_history}
                         style={{ marginBottom: 0 }}
-                        extraData={myJobHistoryList}
+                        extraData={traveler?.job_history}
                         keyExtractor={(item, index) => index}
                         numColumns={1}
                         renderItem={({ item, index }) => {
@@ -165,6 +162,7 @@ export default class OfferAcceptorDetailScreen extends Component {
                         }}
                     />
                 </View>
+                <Loader loading={loading} />
             </View>
         )
     }

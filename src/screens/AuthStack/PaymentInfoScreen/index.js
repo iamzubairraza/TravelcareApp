@@ -13,9 +13,13 @@ import {
 } from 'react-native';
 
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
+import stripe from 'tipsi-stripe';
+import Preference from 'react-native-preference'
+// import { requestOneTimePayment, requestBillingAgreement } from 'react-native-paypal';
 
 import Button, { ButtonWithIcon } from '../../../components/Button'
 import InputField from '../../../components/InputField'
+import KeyboardAccessoryView from '../../../components/KeyboardAccessoryView'
 
 import images from '../../../assets/images'
 import icons from '../../../assets/icons'
@@ -26,34 +30,60 @@ const { width, height } = Dimensions.get('screen');
 import {
     BASIC
 } from '../../../utils/constants'
+import { API, requestPostWithToken, PAYPAL_CLIENT_ID, STRIPE_TEST_KEY } from '../../../utils/API';
+import preferenceKeys from '../../../utils/preferenceKeys';
+
+const inputAccessoryViewID = 'PaymentInfoScreen'
 
 export default class PaymentInfoScreen extends Component {
     constructor(props) {
         super(props);
 
         const { params } = props.route
-        let selectedPeckage = BASIC
+        let selectedPeckage = {}
+        let name = ''
+        let cardNumber = ''
+        let expiryDate = ''
+        let cvv = ''
+        let isRememberChecked = false
+        let isModeEdit = false
         if (params) {
             if (params.selectedPeckage) selectedPeckage = params.selectedPeckage
+            isModeEdit = params.isModeEdit == true
+        }
+
+        const cardDetails = Preference.get(preferenceKeys.CARD_DETAILS)
+        if (cardDetails) {
+            isRememberChecked = true
+            name = cardDetails.name
+            cardNumber = cardDetails.cardNumber
+            expiryDate = cardDetails.expiryDate
+            cvv = cardDetails.cvv
         }
 
         this.state = {
             loading: false,
+            paymentLoading: false,
             selectedPeckage: selectedPeckage,
-            name: '',
-            cardNumber: '',
-            expiryDate: '',
-            cvv: '',
+            isModeEdit: isModeEdit,
+            name: name,
+            cardNumber: cardNumber,
+            expiryDate: expiryDate,
+            cvv: cvv,
             // name: 'ALI REHMAN',
             // cardNumber: '4242 4242 4242 4242',
             // expiryDate: '12/34',
             // cvv: '1234',
-            isRememberChecked: false
+            isRememberChecked: isRememberChecked
         }
     }
 
     componentDidMount() {
-
+        stripe.setOptions({
+            publishableKey: STRIPE_TEST_KEY,
+            //merchantId: 'MERCHANT_ID', // Optional
+            androidPayMode: 'test'
+        })
     }
 
     verifyFields() {
@@ -119,12 +149,118 @@ export default class PaymentInfoScreen extends Component {
             return true;
     }
 
-    onPayAndProceedPress = () => {
+    onPayAndProceedPress = async () => {
         if (this.verifyFields()) {
-            this.props.navigation.pop(2)
-            // Alert.alert(null, 'Under Development')
+            Keyboard.dismiss()
+            const {
+                name,
+                cardNumber,
+                expiryDate,
+                cvv,
+                isRememberChecked
+            } = this.state
+
+            const params = {
+                name: name,
+                number: cardNumber.split(' ').join(''),
+                expMonth: parseInt(expiryDate.substring(0, 2)),
+                expYear: parseInt(expiryDate.substring(3, 5)),
+                cvc: cvv,
+            }
+            try {
+                this.setState({ paymentLoading: true })
+                const token = await stripe.createTokenWithCard(params);
+                this.setState({ paymentLoading: false })
+                console.log("onPayAndProceedPress", "StripeToken:", token.tokenId);
+                if (token) {
+                    if (isRememberChecked) {
+                        Preference.set(preferenceKeys.CARD_DETAILS, { name, cardNumber, expiryDate, cvv })
+                    } else {
+                        Preference.set(preferenceKeys.CARD_DETAILS, null)
+                    }
+                    this.addPayment(token.tokenId)
+                }
+            } catch (error) {
+                this.setState({ paymentLoading: false })
+                console.log("onPayAndProceedPress", "error:", error);
+                Alert.alert('Oops!', error + "")
+            }
         }
     }
+
+    addPayment = (token_id) => {
+        const { selectedPeckage, isModeEdit } = this.state
+        const { navigation } = this.props
+        let formData = new FormData();
+        formData.append('token', token_id)
+        formData.append('plan_id', selectedPeckage.id)
+        formData.append('payment_type', 2)
+        this.setState({ paymentLoading: true })
+
+        console.log('addPayment', JSON.stringify(formData))
+
+        requestPostWithToken(API.ADD_SUBSCRIPTION, formData).then((response) => {
+            this.setState({ paymentLoading: false })
+            console.log('addPayment', 'response.status', response.status)
+            if (response.status == 200) {
+                Alert.alert(
+                    null, "Subcription is successful!",
+                    [{
+                        text: "OK", onPress: () => {
+                            if (isModeEdit) navigation.pop(3)
+                            else navigation.reset({
+                                index: 0,
+                                routes: [{ name: "TravelAgencyStack" }],
+                            });
+                        }
+                    }],
+                    { cancelable: true }
+                )
+            } else {
+                Alert.alert(null, response.message)
+            }
+        }).catch((error) => {
+            this.setState({ paymentLoading: false })
+            console.log('addPayment', 'error', error)
+            Alert.alert(null, error + "")
+        })
+    }
+
+    // onPayPalPress = async () => {
+    //     const { selectedPeckage } = this.state
+    //     const amount = selectedPeckage.amount?.replace('$', '').replace('/mo', '')
+    //     console.log('onPayPalPress', 'amount', amount)
+
+    //     let token = 'sandbox_9dbg82cq_dcpspy2brwdjr3qn'
+    //     // const { deviceData } = await requestDeviceData(token);
+
+    //     try {
+    //         const {
+    //             nonce,
+    //             payerId,
+    //             email,
+    //             firstName,
+    //             lastName,
+    //             phone
+    //         } = await requestOneTimePayment(
+    //             token,
+    //             {
+    //                 amount: amount, // required
+    //                 // any PayPal supported currency (see here: https://developer.paypal.com/docs/integration/direct/rest/currency-codes/#paypal-account-payments)
+    //                 currency: 'GBP',
+    //                 // any PayPal supported locale (see here: https://braintree.github.io/braintree_ios/Classes/BTPayPalRequest.html#/c:objc(cs)BTPayPalRequest(py)localeCode)
+    //                 localeCode: 'en_GB',
+    //                 shippingAddressRequired: false,
+    //                 userAction: 'commit', // display 'Pay Now' on the PayPal review page
+    //                 // one of 'authorize', 'sale', 'order'. defaults to 'authorize'. see details here: https://developer.paypal.com/docs/api/payments/v1/#payment-create-request-body
+    //                 intent: 'authorize',
+    //             }
+    //         );
+    //         console.log('onPayPalPress-requestOneTimePayment', 'nonce', nonce)
+    //     } catch (error) {
+    //         console.log('onPayPalPress-requestOneTimePayment', 'error', error)
+    //     }
+    // }
 
     render() {
         const {
@@ -134,7 +270,8 @@ export default class PaymentInfoScreen extends Component {
             cardNumber,
             expiryDate,
             cvv,
-            isRememberChecked
+            isRememberChecked,
+            paymentLoading
         } = this.state
         const { navigation } = this.props
 
@@ -152,6 +289,7 @@ export default class PaymentInfoScreen extends Component {
                     showsHorizontalScrollIndicator={false}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ flexGrow: 1 }}
+                    extraHeight={160}
                     style={{ flexGrow: 1, width: '100%', paddingHorizontal: 30, paddingTop: 20, paddingBottom: 50 }}>
                     <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: 'row', width: '80%', alignSelf: 'center', justifyContent: 'center' }}>
@@ -172,18 +310,19 @@ export default class PaymentInfoScreen extends Component {
                         </View>
                         <View style={{ flex: 1, paddingVertical: 20, marginTop: 20 }}>
                             <Text style={{ fontSize: 23, fontWeight: '600' }}>{'Payment Infromation'}</Text>
-                            <Text style={{ color: colors.mediumGrey }}>{'Select a payment method or add one below:'}</Text>
+                            {/* <Text style={{ color: colors.mediumGrey }}>{'Select a payment method or add one below:'}</Text> */}
 
-                            <ButtonWithIcon
+                            {/* <ButtonWithIcon
                                 leftIcon={icons.payPal}
                                 containerStyle={{ backgroundColor: colors.lightGrey, paddingHorizontal: 20 }}
                                 buttonTextStyle={{ color: colors.black, fontSize: 14, fontWeight: '600' }}
                                 buttonText={'Link PayPal account'}
                                 onPressButton={() => {
+                                    this.onPayPalPress()
                                     // navigation.pop(2)
-                                    Alert.alert(null, 'Under Development')
+                                    // Alert.alert(null, 'Under Development')
                                 }}
-                            />
+                            /> */}
 
                             <Text style={{ fontWeight: '600', marginTop: 20 }}>{'Add Credit Card'}</Text>
                             <InputField
@@ -227,6 +366,7 @@ export default class PaymentInfoScreen extends Component {
                                 onSubmitEditing={() => {
                                     this.fieldName.focus()
                                 }}
+                                inputAccessoryViewID={inputAccessoryViewID}
                             />
                             <InputField
                                 fieldRef={ref => this.fieldName = ref}
@@ -243,6 +383,7 @@ export default class PaymentInfoScreen extends Component {
                                 onSubmitEditing={() => {
                                     this.fieldExpiryDate.focus()
                                 }}
+                                inputAccessoryViewID={inputAccessoryViewID}
                             />
                             <View style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between' }}>
                                 <InputField
@@ -270,6 +411,7 @@ export default class PaymentInfoScreen extends Component {
                                     onSubmitEditing={() => {
                                         this.fieldCVC.focus()
                                     }}
+                                    inputAccessoryViewID={inputAccessoryViewID}
                                 />
                                 <InputField
                                     fieldRef={ref => this.fieldCVC = ref}
@@ -290,6 +432,7 @@ export default class PaymentInfoScreen extends Component {
                                     onSubmitEditing={() => {
                                         Keyboard.dismiss()
                                     }}
+                                    inputAccessoryViewID={inputAccessoryViewID}
                                 />
                             </View>
                             <TouchableOpacity
@@ -309,6 +452,7 @@ export default class PaymentInfoScreen extends Component {
                                 <Text style={{ marginLeft: 10, color: isRememberChecked ? colors.green : colors.mediumGrey }}>{'Remember this card'}</Text>
                             </TouchableOpacity>
                             <Button
+                                activityIndicatorProps={{ loading: paymentLoading }}
                                 containerStyle={{ backgroundColor: colors.green, marginTop: 30 }}
                                 buttonTextStyle={{ color: colors.white }}
                                 buttonText={'Pay & Proceed'}
@@ -319,6 +463,7 @@ export default class PaymentInfoScreen extends Component {
                         </View>
                     </View>
                 </KeyboardAwareScrollView>
+                <KeyboardAccessoryView inputAccessoryViewID={inputAccessoryViewID} />
             </View>
         )
     }

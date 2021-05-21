@@ -67,7 +67,7 @@ export default class LoginScreen extends Component {
 
     onLoginPress = () => {
         const { navigation } = this.props
-        const { selectedLogin, email, password } = this.state
+        const { selectedLogin, email, password, rememberPassword } = this.state
 
         if (this.verifyFields()) {
             Keyboard.dismiss()
@@ -87,10 +87,10 @@ export default class LoginScreen extends Component {
             this.setState({ loadingOnLogin: true })
             requestPost(URL, formData).then((response) => {
                 this.setState({ loadingOnLogin: false })
-                console.log('API', 'requestPost-response', response);
+                // console.log('API', 'requestPost-response', response);
                 if (response.status == 200) {
                     const { data, token } = response
-                    Preference.set(preferenceKeys.HAS_SESSION, true)
+                    Preference.set(preferenceKeys.HAS_SESSION, rememberPassword)
                     Preference.set(preferenceKeys.USER_TYPE, selectedLogin)
                     Preference.set(preferenceKeys.CURRENT_USER, data)
                     Preference.set(preferenceKeys.AUTH_TOKEN, `Bearer ${token}`)
@@ -176,8 +176,8 @@ export default class LoginScreen extends Component {
                                 this.onLoginPress()
                             }}
                         />
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10, marginBottom: 20 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10, marginTop: 10, marginBottom: 20 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                 <TouchableOpacity
                                     activeOpacity={0.6}
                                     style={[styles.checkCircle, { backgroundColor: rememberPassword ? colors.lightGreen : colors.mediumGrey }]}
